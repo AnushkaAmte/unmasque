@@ -21,11 +21,13 @@ class FromClause(Base):
 
         self.all_relations = set()
         self.core_relations = []
+  
 
     def get_core_relations_by_rename(self, query):
         #we rename the table t to temp
         #then we run the blackbox
         for tabname in self.all_relations: #do this for all the tables in db
+            
             try: #rename the table to temp, create a new table like temp and run the query on this mutated db
                 self.connectionHelper.execute_sql(
                     ["BEGIN;", alter_table_rename_to(tabname, "temp"), create_table_like(tabname, "temp")])

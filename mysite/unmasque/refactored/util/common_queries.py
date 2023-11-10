@@ -21,6 +21,12 @@ def get_row_count(tab):
 def get_star(tab):
     return "select * from " + tab + ";"
 
+def get_freq(tab,attrib):
+    return "select count(*) as counter, " + attrib + " from " + tab + " group by " + attrib + " order by counter desc;" 
+
+def delete_non_matching_rows(tab,attrib,val):
+    return f"delete from {tab} where {attrib} != {val};"
+
 
 def get_restore_name(tab):
     return tab + "_restore"
@@ -41,6 +47,8 @@ def get_tabname_1(tab):
 def get_tabname_4(tab):
     return tab + "4"
 
+def get_tabname_6(tab):
+    return tab + "6"
 
 def get_tabname_un(tab):
     return tab + "_un"

@@ -11,13 +11,13 @@ from ...refactored.limit import Limit
 from ...refactored.orderby_clause import OrderBy
 from ...refactored.projection import Projection
 from ...refactored.view_minimizer import ViewMinimizer
-
+from ...refactored.new_minimizer import NewMinimizer
 
 def extract(query):
 
     connectionHelper = ConnectionHelper()
     connectionHelper.connectUsingParams()
-
+    
     time_profile = create_zero_time_profile()
 
     '''
@@ -42,15 +42,28 @@ def extract(query):
     '''
     Database Minimization: View Minimization
     '''
-    vm = ViewMinimizer(connectionHelper, fc.core_relations, cs2.sizes, cs2.passed)
-    check = vm.doJob(query)
-    time_profile.update_for_view_minimization(vm.local_elapsed_time)
+    #vm = ViewMinimizer(connectionHelper, fc.core_relations, cs2.sizes, cs2.passed)
+    #check = vm.doJob(query)
+    #time_profile.update_for_view_minimization(vm.local_elapsed_time)
+    #if not check:
+    #    print("Cannot do database minimization. ")
+    #    return None, time_profile
+    #if not vm.done:
+    #    print("Some problem while view minimization. Aborting extraction!")
+    #    return None, time_profile 
+
+    nm = NewMinimizer(connectionHelper, fc.core_relations,cs2.sizes)
+    #print(nm)
+    check = nm.doJob(query)
+    #print(check)
+    time_profile.update_for_new_minimization(nm.local_elapsed_time)
     if not check:
         print("Cannot do database minimization. ")
-        return None, time_profile
-    if not vm.done:
+        return None,time_profile
+    if not nm.done:
         print("Some problem while view minimization. Aborting extraction!")
         return None, time_profile
+
 
     '''
     Join Graph Extraction

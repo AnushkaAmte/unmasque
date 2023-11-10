@@ -13,6 +13,7 @@ def create_zero_time_profile():
                        constants,
                        constants,
                        constants,
+                       constants,
                        constants)
 
 
@@ -20,6 +21,7 @@ class ElapsedTime:
     clause_keys = ["From Clause:",
                    "Correlated Sampling:",
                    "View Minimization:",
+                   "New Minimization:"
                    "Where Clause:",
                    "Projection:",
                    "Group BY:",
@@ -30,6 +32,7 @@ class ElapsedTime:
                    ]
     t_sampling = 0
     t_view_min = 0
+    t_new_min = 0
     t_where_clause = 0
     t_projection = 0
     t_groupby = 0
@@ -46,6 +49,7 @@ class ElapsedTime:
                  fc,
                  cs2,
                  vm,
+                 nm,
                  wc,
                  pj,
                  gb,
@@ -56,6 +60,7 @@ class ElapsedTime:
         self.t_from_clause += fc.local_elapsed_time
         self.t_sampling += cs2.local_elapsed_time
         self.t_view_min += vm.local_elapsed_time
+        self.t_new_min += nm.local_elapsed_time
         self.t_where_clause += wc.local_elapsed_time
         self.t_projection += pj.local_elapsed_time
         self.t_groupby += gb.local_elapsed_time
@@ -91,12 +96,16 @@ class ElapsedTime:
     def update_for_view_minimization(self, t_u):
         self.t_view_min += t_u
 
+    def update_for_new_minimization(self, t_u):
+        self.t_new_min += t_u
+
     def update_for_app(self, t_u):
         self.executable_call_count += t_u
 
     def update(self, other_profile):
         self.t_sampling += other_profile.t_sampling
         self.t_view_min += other_profile.t_view_min
+        self.t_new_min += other_profile.t_new_min
         self.t_where_clause += other_profile.t_where_clause
         self.t_projection += other_profile.t_projection
         self.t_groupby += other_profile.t_groupby
@@ -141,6 +150,7 @@ class ElapsedTime:
         times = [self.t_from_clause,
                  self.t_sampling,
                  self.t_view_min,
+                 self.t_new_min,
                  self.t_where_clause,
                  self.t_projection,
                  self.t_groupby,
