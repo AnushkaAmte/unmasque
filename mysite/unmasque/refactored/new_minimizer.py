@@ -2,19 +2,19 @@ import copy
 
 import pandas as pd
 
-from .abstract.MinimizerBase import Minimizer
+from .abstract.NewMinimizerBase import NewMinimizer
 from ..refactored.util.common_queries import get_row_count, alter_table_rename_to, get_min_max_ctid, \
     drop_view, drop_table, create_table_as_select_star_from, get_ctid_from, get_tabname_1, \
     create_view_as_select_star_where_ctid, create_table_as_select_star_from_ctid, get_tabname_6, get_star, \
     get_restore_name,get_freq,delete_non_matching_rows,create_table_like
 from ..refactored.util.utils import isQ_result_empty
 
-class NewMinimizer(Minimizer):
+class NewMinimizer(NewMinimizer):
 
 
     def __init__(self, connectionHelper,
-                 core_relations, core_sizes):
-        super().__init__(connectionHelper, core_relations, core_sizes,"New_Minimizer")
+                 core_relations):
+        super().__init__(connectionHelper, core_relations,"New_Minimizer")
         # self.cs2_passed = sampling_status
 
         self.global_other_info_dict = {}
@@ -70,8 +70,12 @@ class NewMinimizer(Minimizer):
                         size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
                         print(f'size : {size}')
                         result = self.app.doJob(query)
-                        if isQ_result_empty(result) == False:
+                        print(result)
+                        if not result:
+                            self.connectionHelper.execute_sql(["ROLLBACK;"])
+                        else:
                             break
+                            
 
                     except Exception as error:
                         print("Error Occurred in  minimizer. Error: " + str(error))
