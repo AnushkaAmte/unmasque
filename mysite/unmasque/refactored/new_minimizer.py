@@ -49,7 +49,7 @@ class NewMinimizer(Minimizer):
         for i in range(len(self.core_relations)):
             tabname = self.core_relations[i]
             attrib_list = self.get_attribs(tabname)
-            print(attrib_list)
+            #print(attrib_list)
             for attrib in attrib_list:
                 #row_count = get_row_count(tabname)
                 #freq_dict = {};
@@ -65,16 +65,17 @@ class NewMinimizer(Minimizer):
                         self.connectionHelper.execute_sql(
                                     ["BEGIN;", alter_table_rename_to(tabname,get_tabname_6(tabname)) , 
                                     create_table_as_select_star_from(tabname,get_tabname_6(tabname)),
-                                        delete_non_matching_rows_str(tabname,attrib,max_freq_val),drop_table(get_tabname_6(tabname))])
+                                        delete_non_matching_rows_str(tabname,attrib,max_freq_val),
+                                        drop_table(get_tabname_6(tabname))])
                         #print(1)
                         size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
                         print(f'size : {size}')
                         result = self.app.doJob(query)
                         print(result)
-                        if not result:
-                            self.connectionHelper.execute_sql(["ROLLBACK;"])
-                        else:
+                        if result:
                             break
+                            #self.connectionHelper.execute_sql(["ROLLBACK;"])
+                        
                             
 
                     except Exception as error:
@@ -83,7 +84,7 @@ class NewMinimizer(Minimizer):
                         exit(1)
 
                     # self.connectionHelper.execute_sql(["ROLLBACK;"])
-                    
+        return True            
 
                     
 

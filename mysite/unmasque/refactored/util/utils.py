@@ -12,6 +12,10 @@ def isQ_result_empty(Res):
         return True
     return False
 
+def isQ_result_zero(Res):
+    if len(Res) ==0:
+        return True
+    return False
 
 def generateCombos(val):
     res = [[0]]

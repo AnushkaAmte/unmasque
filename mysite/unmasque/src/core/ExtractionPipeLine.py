@@ -43,20 +43,20 @@ def extract(query):
     '''
     Database Minimization: View Minimization
     '''
-    # vm = ViewMinimizer(connectionHelper, fc.core_relations, cs2.sizes, cs2.passed)
-    # check = vm.doJob(query)
-    # time_profile.update_for_view_minimization(vm.local_elapsed_time)
-    # if not check:
+    #vm = ViewMinimizer(connectionHelper, fc.core_relations, cs2.sizes, cs2.passed)
+    #check = vm.doJob(query)
+    #time_profile.update_for_view_minimization(vm.local_elapsed_time)
+    #if not check:
     #    print("Cannot do database minimization. ")
     #    return None, time_profile
-    # if not vm.done:
+    #if not vm.done:
     #    print("Some problem while view minimization. Aborting extraction!")
     #    return None, time_profile 
 
     nm = NewMinimizer(connectionHelper, fc.core_relations,cs2.sizes)
-    #print(nm)
+    print(nm)
     check = nm.doJob(query)
-    #print(check)
+    print(check)
     time_profile.update_for_new_minimization(nm.local_elapsed_time)
     if not check:
         print("Cannot do database minimization. ")
