@@ -33,23 +33,23 @@ def extract(query):
     '''
     Correlated Sampling
     '''
-    #cs2 = Cs2(connectionHelper, fc.all_relations, fc.core_relations, fc.get_key_lists())
+    # cs2 = Cs2(connectionHelper, fc.all_relations, fc.core_relations, fc.get_key_lists())
     
-    #check = cs2.doJob(query)
-    #time_profile.update_for_cs2(cs2.local_elapsed_time)
-    #if not check or not cs2.done:
+    # check = cs2.doJob(query)
+    # time_profile.update_for_cs2(cs2.local_elapsed_time)
+    # if not check or not cs2.done:
     #    print("Sampling failed!")
 
     '''
     Database Minimization: View Minimization
     '''
-    #vm = ViewMinimizer(connectionHelper, fc.core_relations, cs2.sizes, cs2.passed)
-    #check = vm.doJob(query)
-    #time_profile.update_for_view_minimization(vm.local_elapsed_time)
-    #if not check:
+    # vm = ViewMinimizer(connectionHelper, fc.core_relations, cs2.sizes, cs2.passed)
+    # check = vm.doJob(query)
+    # time_profile.update_for_view_minimization(vm.local_elapsed_time)
+    # if not check:
     #    print("Cannot do database minimization. ")
     #    return None, time_profile
-    #if not vm.done:
+    # if not vm.done:
     #    print("Some problem while view minimization. Aborting extraction!")
     #    return None, time_profile 
 
@@ -72,7 +72,7 @@ def extract(query):
     ej = EquiJoin(connectionHelper,
                   fc.get_key_lists(),
                   fc.core_relations,
-                  vm.global_min_instance_dict)
+                  nm.global_min_instance_dict)
     check = ej.doJob(query)
     time_profile.update_for_where_clause(ej.local_elapsed_time)
     if not check:
@@ -87,7 +87,7 @@ def extract(query):
     fl = Filter(connectionHelper,
                 fc.get_key_lists(),
                 fc.core_relations,
-                vm.global_min_instance_dict,
+                nm.global_min_instance_dict,
                 ej.global_key_attributes)
     check = fl.doJob(query)
     time_profile.update_for_where_clause(fl.local_elapsed_time)

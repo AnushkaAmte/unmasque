@@ -27,6 +27,8 @@ def get_freq(tab,attrib):
 def delete_non_matching_rows(tab,attrib,val):
     return f"delete from {tab} where {attrib} != {val};"
 
+def delete_non_matching_rows_str(tab,attrib,val):
+    return f"delete from {tab} where {attrib} != '{val}';"
 
 def get_restore_name(tab):
     return tab + "_restore"
