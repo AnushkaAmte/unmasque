@@ -33,12 +33,12 @@ def extract(query):
     '''
     Correlated Sampling
     '''
-    # cs2 = Cs2(connectionHelper, fc.all_relations, fc.core_relations, fc.get_key_lists())
+    cs2 = Cs2(connectionHelper, fc.all_relations, fc.core_relations, fc.get_key_lists())
     
-    # check = cs2.doJob(query)
-    # time_profile.update_for_cs2(cs2.local_elapsed_time)
-    # if not check or not cs2.done:
-    #    print("Sampling failed!")
+    check = cs2.doJob(query)
+    time_profile.update_for_cs2(cs2.local_elapsed_time)
+    if not check or not cs2.done:
+        print("Sampling failed!")
 
     '''
     Database Minimization: View Minimization
@@ -53,7 +53,7 @@ def extract(query):
     #    print("Some problem while view minimization. Aborting extraction!")
     #    return None, time_profile 
 
-    nm = NewMinimizer(connectionHelper, fc.core_relations)
+    nm = NewMinimizer(connectionHelper, fc.core_relations,cs2.sizes)
     #print(nm)
     check = nm.doJob(query)
     #print(check)
