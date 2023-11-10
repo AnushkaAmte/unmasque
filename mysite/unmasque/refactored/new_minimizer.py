@@ -44,6 +44,21 @@ class NewMinimizer(Minimizer):
         query = self.extract_params_from_args(args)
         return self.frequency_counter( query)
     
+    def populate_dict_info(self, query):
+        # POPULATE MIN INSTANCE DICT
+        for tabname in self.core_relations:
+            self.global_min_instance_dict[tabname] = []
+            sql_query = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
+            df = pd.DataFrame(sql_query)
+            self.global_min_instance_dict[tabname].append(tuple(df.columns))
+            for index, row in df.iterrows():
+                self.global_min_instance_dict[tabname].append(tuple(row))
+
+        # populate other data
+        new_result = self.app.doJob(query)
+        self.global_result_dict['min'] = copy.deepcopy(new_result)
+        self.local_other_info_dict['Result Cardinality'] = str(len(new_result) - 1)
+        self.global_other_info_dict['min'] = copy.deepcopy(self.local_other_info_dict)
     
     def frequency_counter(self, query):
         for i in range(len(self.core_relations)):
@@ -83,7 +98,8 @@ class NewMinimizer(Minimizer):
                         self.connectionHelper.execute_sql(["ROLLBACK;"])
                         exit(1)
 
-                    # self.connectionHelper.execute_sql(["ROLLBACK;"])
+        # self.connectionHelper.execute_sql(["ROLLBACK;"])
+        self.populate_dict_info(query)            
         return True            
 
                     
