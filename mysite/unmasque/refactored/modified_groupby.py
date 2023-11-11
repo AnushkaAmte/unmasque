@@ -31,9 +31,21 @@ class ModifiedGroupBy(GroupByBase):
             local_attrib_dict = {index:df}
         return local_attrib_dict
       
+    def checkWhetherAllSame(items):
+        return all(x == items[0] for x in items) 
     
-    def doExtractJob(self,query,local_attrib_dict):
-        for i in range(len(self.core_relations)):
-            tabname = self.core_relations[i]
-            #get attributes   local_attrib_dict[i] --> attributes of table i
-            
+    def doExtractJob(self,query):
+        local_attrib_dict = self.generateDict(self.global_min_instance_dict)
+        #row1 values
+        for tabname in local_attrib_dict:
+            #check whether all values in this column are same or not
+            index = 0
+            for attrib,values in local_attrib_dict[tabname].iteritems():
+                attrib_list = values.tolist()
+                if self.checkWhetherAllSame(attrib_list):
+                    if type(attrib_list[0]) == 'int64':
+                        temp = attrib_list[0] + 1
+                        
+                
+                    
+                        
