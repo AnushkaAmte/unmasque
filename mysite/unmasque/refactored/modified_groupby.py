@@ -37,14 +37,25 @@ class ModifiedGroupBy(GroupByBase):
     def doExtractJob(self,query):
         local_attrib_dict = self.generateDict(self.global_min_instance_dict)
         #row1 values
-        for tabname in local_attrib_dict:
-            #check whether all values in this column are same or not
-            index = 0
-            for attrib,values in local_attrib_dict[tabname].iteritems():
+        for tabname in local_attrib_dict:#iterate over dataframe
+            row1= local_attrib_dict[tabname].iloc[0]
+
+            col_idx=0;
+            for attrib,values in local_attrib_dict[tabname].items():  #iterate over columns
                 attrib_list = values.tolist()
-                if self.checkWhetherAllSame(attrib_list):
-                    if type(attrib_list[0]) == 'int64':
-                        temp = attrib_list[0] + 1
+            
+                if(type(attrib_list[0])==int):
+                    temp_val = attrib_list[0]+1
+                    extra_row = row1
+                   
+                    extra_row[col_idx] = temp_val
+                   
+                    col_idx+=1
+                    local_attrib_dict[tabname] = local_attrib_dict[tabname].append(extra_row, ignore_index=True)
+                   
+                    local_attrib_dict[tabname] =   local_attrib_dict[tabname].drop(  local_attrib_dict[tabname].index[-1])
+                    extra_row[col_idx-1]=temp_val-1
+
                         
                 
                     
