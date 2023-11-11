@@ -2,6 +2,7 @@
 #new : groupby flag, group by cols
 import pandas as pd 
 import copy
+import datetime
 from ..refactored.abstract.GroupByBase import GroupByBase
 from ..refactored.util.common_queries import get_row_count, alter_table_rename_to, get_min_max_ctid, \
     drop_view, drop_table, create_table_as_select_star_from, get_ctid_from, get_tabname_1, \
@@ -61,6 +62,9 @@ class ModifiedGroupBy(GroupByBase):
                 if(type(attrib_list[0])==int):
                     temp_val = attrib_list[0]-1
                     extra_row = row1
+                    for i, item in enumerate(extra_row):
+                        if isinstance(item, datetime.date):
+                            extra_row[i] = str(item)
                    
                     extra_row[col_idx] = temp_val
                    
@@ -71,7 +75,8 @@ class ModifiedGroupBy(GroupByBase):
                         )
                         result = self.app.doJob(query)
                         size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
-                        print(size)
+                        print(f"2:{size}")
+                        
                         if(size == 2):
                             self.group_by_attrib.append(attrib)
                             self.has_groupby = True
@@ -99,6 +104,9 @@ class ModifiedGroupBy(GroupByBase):
                 if(type(attrib_list[0])==int):
                     temp_val = attrib_list[0]+1
                     extra_row = row1
+                    for i, item in enumerate(extra_row):
+                        if isinstance(item, datetime.date):
+                            extra_row[i] = str(item)
                    
                     extra_row[col_idx] = temp_val
                    
@@ -109,6 +117,7 @@ class ModifiedGroupBy(GroupByBase):
                         )
                         result = self.app.doJob(query)
                         size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
+                        print(f"1:{size}")
                         if(size == 2):
                             self.group_by_attrib.append(attrib)
                             self.has_groupby = True
