@@ -17,5 +17,9 @@ class ModifiedGroupBy(GroupByBase):
 
         self.has_groupby = False
         self.group_by_attrib = []
-
     
+    def doExtractJob(self,query,local_attrib_dict):
+        for i in range(len(self.core_relations)):
+            tabname = self.core_relations[i]
+            #get attributes   local_attrib_dict[i] --> attributes of table i
+            
