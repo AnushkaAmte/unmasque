@@ -39,19 +39,10 @@ def extract(query):
     time_profile.update_for_cs2(cs2.local_elapsed_time)
     if not check or not cs2.done:
         print("Sampling failed!")
-
+    
     '''
-    Database Minimization: View Minimization
+    Database Minimization Dmin
     '''
-    #vm = ViewMinimizer(connectionHelper, fc.core_relations, cs2.sizes, cs2.passed)
-    #check = vm.doJob(query)
-    #time_profile.update_for_view_minimization(vm.local_elapsed_time)
-    #if not check:
-    #    print("Cannot do database minimization. ")
-    #    return None, time_profile
-    #if not vm.done:
-    #    print("Some problem while view minimization. Aborting extraction!")
-    #    return None, time_profile 
 
     nm = NewMinimizer(connectionHelper, fc.core_relations,cs2.sizes)
     print(nm)

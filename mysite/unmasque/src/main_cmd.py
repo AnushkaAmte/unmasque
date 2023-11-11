@@ -1,4 +1,4 @@
-from .core import ExtractionPipeLine
+from .core import MutatedPipeline
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -13,7 +13,7 @@ if __name__ == '__main__':
          "< '1995-03-15' and l_shipdate > '1995-03-15' group by l_orderkey, o_orderdate, o_shippriority order by revenue " \
          "desc, o_orderdate, l_orderkey limit 10;"
 
-    eq, time = ExtractionPipeLine.extract(hq)
+    eq, time = MutatedPipeline.extract(hq)
 
     print("=========== Extracted Query =============")
     print(eq)
