@@ -18,6 +18,20 @@ class ModifiedGroupBy(GroupByBase):
         self.has_groupby = False
         self.group_by_attrib = []
     
+    def generateDict(global_min_instance_dict):
+        data=[]
+        temp = global_min_instance_dict
+        for index in temp:
+            cols =list(temp[index][0])
+            #print(cols)
+            del temp[index][0]
+            data = temp[index]
+            df = pd.DataFrame(data,columns=cols)
+            #print(df)
+            local_attrib_dict = {index:df}
+        return local_attrib_dict
+      
+    
     def doExtractJob(self,query,local_attrib_dict):
         for i in range(len(self.core_relations)):
             tabname = self.core_relations[i]
