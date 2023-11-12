@@ -6,7 +6,7 @@ from ...refactored.cs2 import Cs2
 from ...refactored.equi_join import EquiJoin
 from ...refactored.filter import Filter
 from ...refactored.from_clause import FromClause
-from ...refactored.groupby_clause import GroupBy
+from ...refactored.modified_groupby import ModifiedGroupBy
 from ...refactored.limit import Limit
 from ...refactored.orderby_clause import OrderBy
 from ...refactored.projection import Projection
@@ -71,6 +71,22 @@ def extract(query):
     if not ej.done:
         print("Some error while Join Predicate extraction. Aborting extraction!")
         return None, time_profile
+    print(nm.global_min_instance_dict)
+    '''
+    Group By Clause Extraction
+    '''
+    gb = ModifiedGroupBy(connectionHelper,
+                 fc.core_relations,
+                 nm.global_min_instance_dict
+                 )
+    check = gb.doJob(query)
+    time_profile.update_for_group_by(gb.local_elapsed_time)
+    if not check:
+        print("Cannot find group by attributes. ")
+
+    if not gb.done:
+        print("Some error while group by extraction. Aborting extraction!")
+        return None, time_profile
 
     '''
     Filters Extraction
@@ -104,25 +120,6 @@ def extract(query):
         return None, time_profile
     if not pj.done:
         print("Some error while projection extraction. Aborting extraction!")
-        return None, time_profile
-
-    '''
-    Group By Clause Extraction
-    '''
-    gb = GroupBy(connectionHelper,
-                 ej.global_attrib_types,
-                 fc.core_relations,
-                 fl.filter_predicates,
-                 ej.global_all_attribs,
-                 ej.global_join_graph,
-                 pj.projected_attribs)
-    check = gb.doJob(query)
-    time_profile.update_for_group_by(gb.local_elapsed_time)
-    if not check:
-        print("Cannot find group by attributes. ")
-
-    if not gb.done:
-        print("Some error while group by extraction. Aborting extraction!")
         return None, time_profile
 
     '''
