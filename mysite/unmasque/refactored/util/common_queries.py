@@ -59,7 +59,7 @@ def insert_row(tabname,value_list):
     return f"insert into {tabname} values {value_list};"
 
 def delete_row(tabname,val,attrib):
-    return f"delete from {tabname} where {attrib} = {val};"
+    return f"delete from {tabname} where {attrib} = '{val}';"
 
 def create_view_as_select_star_where_ctid(mid_ctid1, start_ctid, tabname, tabname1):
     return ("create view " + tabname
