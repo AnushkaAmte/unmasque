@@ -2,6 +2,8 @@ import copy
 
 from .util.utils import get_datatype_from_typesList, get_dummy_val_for, get_val_plus_delta, \
     get_all_combo_lists
+from ..refactored.util.common_queries import drop_table, create_table_as_select_star_from, get_tabname_4, get_star\
+     
 from .abstract.where_clause import WhereClause
 
 
@@ -47,6 +49,7 @@ class EquiJoin(WhereClause):
         query = self.extract_params_from_args(args)
         self.get_init_data()
         self.get_join_graph(query)
+        print(f"Join attr :{self.global_join_graph}")
         return self.global_join_graph
 
     def assign_values_to_lists(self, list1, list2, temp_copy, val1, val2):
@@ -64,7 +67,7 @@ class EquiJoin(WhereClause):
 #temp_copy = table instance in the min view
 #basically the negate function from the paper
 #here instead of negate we assign the value 2
-
+    
     def construct_attribs_types_dict(self):
         max_list_len = max(len(elt) for elt in self.global_key_lists)
         combo_dict_of_lists = get_all_combo_lists(max_list_len)
@@ -90,13 +93,19 @@ class EquiJoin(WhereClause):
             for elt in combo_dict_of_lists[len(join_keys)]:
                 list1, list2, list_type = construct_two_lists(attrib_types_dict, join_keys, elt)
                 val1, val2 = get_two_different_vals(list_type)
-                temp_copy = {tab: self.global_min_instance_dict[tab] for tab in self.core_relations}
+                temp_copy ={}
+                for tab in self.core_relations:
+                    data = copy.deepcopy(self.global_min_instance_dict[tab])
+                    temp_copy[tab] =data
+
+                #temp_copy = {tab: self.global_min_instance_dict[tab] for tab in self.core_relations}
 
                 # Assign two different values to two lists in database
                 self.assign_values_to_lists(list1, list2, temp_copy, val1, val2)
 
                 # CHECK THE RESULT
                 new_result = self.app.doJob(query)
+                print(f"ej: {new_result}")
                 if len(new_result) > 1: #join not in our query
                     remove_edge_from_join_graph_dicts(join_keys, list1, list2, global_key_lists)#remove that edge
                     break
@@ -105,7 +114,6 @@ class EquiJoin(WhereClause):
                 if all(x in keys for x in join_keys):
                     global_key_lists.remove(keys)
                     join_graph.append(copy.deepcopy(join_keys)) #in general we remove that clique after evaluating it
-
             for val in join_keys:
                 self.connectionHelper.execute_sql(["Insert into " + val[0] + " Select * from " + val[0] + "4;"])
         self.refine_join_graph(join_graph)

@@ -30,6 +30,7 @@ def extract(query):
         print("Some problem while extracting from clause. Aborting!")
         return None, time_profile
 
+
     '''
     Correlated Sampling
     '''
@@ -44,10 +45,10 @@ def extract(query):
     Database Minimization Dmin
     '''
 
-    nm = NewMinimizer(connectionHelper, fc.core_relations,cs2.sizes)
-    print(nm)
+    connectionHelper.execute_sql(["BEGIN;"])
+    nm = NewMinimizer(connectionHelper, fc.core_relations,cs2.sizes,cs2.passed)
+    #print(nm)
     check = nm.doJob(query)
-    print(check)
     time_profile.update_for_new_minimization(nm.local_elapsed_time)
     if not check:
         print("Cannot do database minimization. ")
@@ -56,7 +57,8 @@ def extract(query):
         print("Some problem while view minimization. Aborting extraction!")
         return None, time_profile
 
-
+    #print(f'NM: {nm.global_min_instance_dict}')
+    connectionHelper.execute_sql(["SAVEPOINT nm;"])
     '''
     Join Graph Extraction
     '''
@@ -71,10 +73,12 @@ def extract(query):
     if not ej.done:
         print("Some error while Join Predicate extraction. Aborting extraction!")
         return None, time_profile
-    print(nm.global_min_instance_dict)
+    #print(nm.global_min_instance_dict)
+    connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT nm;"])
     '''
     Group By Clause Extraction
     '''
+    #print(f'EJ: {nm.global_min_instance_dict}')
     gb = ModifiedGroupBy(connectionHelper,
                  fc.core_relations,
                  nm.global_min_instance_dict

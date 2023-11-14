@@ -33,6 +33,7 @@ class FromClause(Base):
                     ["BEGIN;", alter_table_rename_to(tabname, "temp"), create_table_like(tabname, "temp")])
 #is name was a table in the query, rename name to temp, create a new empty table with the same schema as temp, rereun the query
                 new_result = self.app.doJob(query)
+                print(f"fc: {new_result}")
                 if isQ_result_empty(new_result): #if result has <=1 tuple,i.e if result is empty
                     self.core_relations.append(tabname) #table is in query
             except Exception as error:

@@ -79,6 +79,7 @@ class ViewMinimizer(Minimizer):
         self.connectionHelper.execute_sql(
             [create_view_as_select_star_where_ctid(mid_ctid1, start_ctid, tabname, tabname1)])
         new_result = self.app.doJob(query)
+        print(f"vm:{new_result}")
         if isQ_result_empty(new_result):
             # Take the lower half
             start_ctid = mid_ctid2
@@ -153,6 +154,7 @@ class ViewMinimizer(Minimizer):
 
         # populate other data
         new_result = self.app.doJob(query)
+        print(f"vm pop: {new_result}")
         self.global_result_dict['min'] = copy.deepcopy(new_result)
         self.local_other_info_dict['Result Cardinality'] = str(len(new_result) - 1)
         self.global_other_info_dict['min'] = copy.deepcopy(self.local_other_info_dict)
