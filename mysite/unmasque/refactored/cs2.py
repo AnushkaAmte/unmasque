@@ -92,7 +92,7 @@ class Cs2(Base):
 
         # check for null free rows and not just nonempty results
         new_result = self.app.doJob(query)
-        print(f"cs2: {new_result}")
+        #print(f"cs2: {new_result}")
         if isQ_result_empty(new_result):
             print('sampling failed in iteraation')
             for table in self.core_relations:

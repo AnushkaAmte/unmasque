@@ -105,7 +105,7 @@ class EquiJoin(WhereClause):
 
                 # CHECK THE RESULT
                 new_result = self.app.doJob(query)
-                print(f"ej: {new_result}")
+                #print(f"ej: {new_result}")
                 if len(new_result) > 1: #join not in our query
                     remove_edge_from_join_graph_dicts(join_keys, list1, list2, global_key_lists)#remove that edge
                     break

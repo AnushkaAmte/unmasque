@@ -103,7 +103,7 @@ class NewMinimizer(Minimizer):
                             break
                         if len(result)<=1:
                             self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT new_min;"])
-                            print(result)
+                            #print(result)
 
 
                     
