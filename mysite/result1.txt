@@ -1,0 +1,110 @@
+inside -- initialization.initialization
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority')]
+fc: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('5765', '9871.66', '1994-12-15', '0'), ('36069', '9562.82', '1994-12-06', '0'), ('35845', '9562.82', '1995-01-07', '0'), ('38784', '9562.82', '1995-02-04', '0'), ('7840', '9442.55', '1995-01-09', '0'), ('44102', '9442.55', '1995-01-14', '0'), ('5312', '9442.55', '1995-02-24', '0'), ('46402', '9189.75', '1995-01-09', '0'), ('22276', '9131.64', '1995-01-29', '0'), ('450', '9043.55', '1995-03-05', '0')]
+Starting correlated sampling 
+lineitem 54
+lineitem 113
+customer 0
+orders 58
+customer 57
+lineitem 165
+orders 109
+orders 109
+customer 57
+lineitem 165
+cs2: [('orderkey', 'revenue', 'orderdate', 'shippriority')]
+sampling failed in iteraation
+sampling failed in iteraation 3
+Starting correlated sampling 
+lineitem 694
+lineitem 694
+customer 84
+orders 174
+customer 243
+lineitem 1654
+orders 589
+orders 589
+customer 243
+lineitem 1654
+cs2: [('orderkey', 'revenue', 'orderdate', 'shippriority'), ('44612', '7447.99', '1995-03-14', '0')]
+nm pop:[('orderkey', 'revenue', 'orderdate', 'shippriority'), ('44612', '7447.99', '1995-03-14', '0')]
+global_min_instance_dict: {'orders': [('o_orderkey', 'o_custkey', 'o_orderstatus', 'o_totalprice', 'o_orderdate', 'o_orderpriority', 'o_clerk', 'o_shippriority', 'o_comment'), (44612, 1006, 'P', 161131.07, datetime.date(1995, 3, 14), '2-HIGH         ', 'Clerk#000000581', 0, 'fily regular dependencies mold slyly ironic, ironic th')], 'customer': [('c_custkey', 'c_name', 'c_address', 'c_nationkey', 'c_phone', 'c_acctbal', 'c_mktsegment', 'c_comment'), (1006, 'Customer#000001006', 'Q46palcsa4KwAMhPS', 12, '22-364-780-5932', 7447.99, 'BUILDING  ', 'equests. regular pinto beans sleep furiously express, ironic accounts. special,')], 'lineitem': [('l_orderkey', 'l_partkey', 'l_suppkey', 'l_linenumber', 'l_quantity', 'l_extendedprice', 'l_discount', 'l_tax', 'l_returnflag', 'l_linestatus', 'l_shipdate', 'l_commitdate', 'l_receiptdate', 'l_shipinstruct', 'l_shipmode', 'l_comment'), (44612, 559, 20, 1, 27.0, 39407.85, 0.03, 0.03, 'A', 'F', datetime.date(1995, 5, 13), datetime.date(1995, 6, 9), datetime.date(1995, 5, 17), 'COLLECT COD              ', 'SHIP      ', 'ar requests print furiously si')]}
+... checking for:  [('customer', 'c_custkey'), ('orders', 'o_custkey')]
+ej: [('orderkey', 'revenue', 'orderdate', 'shippriority')]
+... checking for:  [('orders', 'o_orderkey'), ('lineitem', 'l_orderkey')]
+ej: [('orderkey', 'revenue', 'orderdate', 'shippriority')]
+Join attr :[['c_custkey', 'o_custkey'], ['o_orderkey', 'l_orderkey']]
+orders
+customer
+lineitem
+GB ['o_shippriority']
+Projected Attrib ['o_orderkey', 'c_acctbal', 'o_orderdate', 'o_shippriority']
+Dependencies [[('identical_expr_nc', 'o_orderkey')], [('identical_expr_nc', 'c_acctbal')], [('identical_expr_nc', 'o_orderdate')], [('identical_expr_nc', 'o_shippriority')]]
+ele being checked o_orderkey 0
+Simple Projection, Continue
+ele being checked c_acctbal 1
+Simple Projection, Continue
+ele being checked o_orderdate 2
+Simple Projection, Continue
+ele being checked o_shippriority 3
+Simple Projection, Continue
+Result ['orderkey', 'revenue', 'orderdate', 'shippriority'] ['o_orderkey', 'c_acctbal', 'o_orderdate', 'o_shippriority'] [[], [], [], []] [[], [], [], []]
+Attribute Ordering:  (o_orderkey,o_custkey,o_orderstatus,o_totalprice,o_orderdate,o_orderpriority,o_clerk,o_shippriority,o_comment,
+Rows:  [(5, '2', 'C', '2', '0001-01-01', 'C', 'C', '2', 'C'), (5, '2', 'C', '2', '0001-01-01', 'C', 'C', '2', 'C'), (8, '2', 'C', '2', '0001-01-01', 'C', 'C', '2', 'C')]
+Attribute Ordering:  (c_custkey,c_name,c_address,c_nationkey,c_phone,c_acctbal,c_mktsegment,c_comment,
+Rows:  [('2', 'C', 'C', '2', 'C', '2', 'BUILDING', 'C')]
+Attribute Ordering:  (l_orderkey,l_partkey,l_suppkey,l_linenumber,l_quantity,l_extendedprice,l_discount,l_tax,l_returnflag,l_linestatus,l_shipdate,l_commitdate,l_receiptdate,l_shipinstruct,l_shipmode,l_comment,
+Rows:  [(5, '2', '2', '2', '2', '2', '2', '2', 'C', 'C', '1995-03-16', '1000-01-03', '1000-01-03', 'C', 'C', 'C'), (8, '2', '2', '2', '2', '2', '2', '2', 'C', 'C', '1995-03-16', '1000-01-03', '1000-01-03', 'C', 'C', 'C')]
+Attribute Ordering:  (o_orderkey,o_custkey,o_orderstatus,o_totalprice,o_orderdate,o_orderpriority,o_clerk,o_shippriority,o_comment,
+Rows:  [('2', '2', 'C', '2', '0001-01-01', 'C', 'C', '2', 'C'), ('2', '2', 'C', '2', '0001-01-02', 'C', 'C', '2', 'C')]
+Attribute Ordering:  (c_custkey,c_name,c_address,c_nationkey,c_phone,c_acctbal,c_mktsegment,c_comment,
+Rows:  [('2', 'C', 'C', '2', 'C', '2', 'BUILDING', 'C')]
+Attribute Ordering:  (l_orderkey,l_partkey,l_suppkey,l_linenumber,l_quantity,l_extendedprice,l_discount,l_tax,l_returnflag,l_linestatus,l_shipdate,l_commitdate,l_receiptdate,l_shipinstruct,l_shipmode,l_comment,
+Rows:  [('2', '2', '2', '2', '2', '2', '2', '2', 'C', 'C', '1995-03-16', '1000-01-03', '1000-01-03', 'C', 'C', 'C')]
+Attribute Ordering:  (o_orderkey,o_custkey,o_orderstatus,o_totalprice,o_orderdate,o_orderpriority,o_clerk,o_shippriority,o_comment,
+Rows:  [('2', '2', 'C', '2', '0001-01-01', 'C', 'C', '2', 'C')]
+Attribute Ordering:  (c_custkey,c_name,c_address,c_nationkey,c_phone,c_acctbal,c_mktsegment,c_comment,
+Rows:  [('2', 'C', 'C', '2', 'C', 5, 'BUILDING', 'C'), ('2', 'C', 'C', '2', 'C', 5, 'BUILDING', 'C'), ('2', 'C', 'C', '2', 'C', 8, 'BUILDING', 'C')]
+Attribute Ordering:  (l_orderkey,l_partkey,l_suppkey,l_linenumber,l_quantity,l_extendedprice,l_discount,l_tax,l_returnflag,l_linestatus,l_shipdate,l_commitdate,l_receiptdate,l_shipinstruct,l_shipmode,l_comment,
+Rows:  [('2', '2', '2', '2', '2', '2', '2', '2', 'C', 'C', '1995-03-16', '1000-01-03', '1000-01-03', 'C', 'C', 'C')]
+inside:   reveal_proc_support.refine_Query
+=========== Extracted Query =============
+Select o_orderkey as orderkey, Max(c_acctbal) as revenue, o_orderdate as orderdate, o_shippriority as shippriority
+From orders, customer, lineitem
+Where c_custkey = o_custkey and o_orderkey = l_orderkey and o_orderdate  <= '1995-03-14' and c_mktsegment  = 'BUILDING' and l_shipdate  >= '1995-03-16'
+Group By o_shippriority
+Order By revenue desc, orderdate asc
+Limit 10;
+
+--------------Extraction Time per Module in the Pipeline------------------:
+From Clause:                          324 ms.
+Correlated Sampling:                  188 ms.
+View Minimization:                    0 ms.
+New Minimization:Where Clause:        7598 ms.
+Projection:                           496 ms.
+Group BY:                             104 ms.
+Aggregation:                          18 ms.
+Order by:                             66 ms.
+Limit:                                132 ms.
+Number of Times Executable called:    0
