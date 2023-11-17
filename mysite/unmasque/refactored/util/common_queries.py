@@ -31,7 +31,7 @@ def delete_non_matching_rows_str(tab,attrib,val):
     return f"delete from {tab} where {attrib} != '{val}';"
 
 def get_col_idx(tabname,attrib):
-    return f"select ordinal_position from information_schema.columns where table_schema = 'public' and table_name = {tabname} and column_name = '{attrib}';" 
+    return f"select ordinal_position from information_schema.columns where table_schema = 'public' and table_name = '{tabname}' and column_name = '{attrib}';" 
 
 def get_restore_name(tab):
     return tab + "_restore"
