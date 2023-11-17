@@ -81,7 +81,8 @@ def extract(query):
     #print(f'EJ: {nm.global_min_instance_dict}')
     gb = ModifiedGroupBy(connectionHelper,
                  fc.core_relations,
-                 nm.global_min_instance_dict
+                 nm.global_min_instance_dict,
+                 ej.global_join_graph
                  )
     check = gb.doJob(query)
     time_profile.update_for_group_by(gb.local_elapsed_time)

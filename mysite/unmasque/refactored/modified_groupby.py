@@ -10,14 +10,14 @@ from ..refactored.util.common_queries import get_row_count, alter_table_rename_t
     drop_view, drop_table, create_table_as_select_star_from, get_ctid_from, get_tabname_1, \
     create_view_as_select_star_where_ctid, create_table_as_select_star_from_ctid, get_tabname_6, get_star, \
     get_restore_name,get_freq,delete_non_matching_rows,create_table_like,delete_non_matching_rows_str,\
-    insert_row,delete_row
+    insert_row,delete_row,get_col_idx
 from ..refactored.util.utils import isQ_result_empty
 
 
 class ModifiedGroupBy(GroupByBase):
     def __init__(self, connectionHelper,
-                 core_relations,global_min_instance_dict):
-        super().__init__(connectionHelper,"Group_By" ,core_relations,global_min_instance_dict)
+                 core_relations,global_min_instance_dict,global_join_graph):
+        super().__init__(connectionHelper,"Group_By" ,core_relations,global_min_instance_dict,global_join_graph)
 
         self.has_groupby = False
         self.group_by_attrib = []
@@ -52,15 +52,53 @@ class ModifiedGroupBy(GroupByBase):
     def checkWhetherAllSame(self,items):
         return all(x == items[0] for x in items) 
     
-    def insert_and_delete_extra_row(self,query,tabname,extra_row,attrib,temp_val):
+    def cascade_insert(self,attrib,global_join_graph,temp_val,og_val):
+        for join_keys in global_join_graph:
+            if attrib in join_keys:
+                tuple_with_attrib = copy.deepcopy(attrib)
+        #insert temp_val in referenced tables except attrib
+        for referenced_attribs in tuple_with_attrib:
+            if(referenced_attribs != attrib):
+                res = self.connectionHelper.execute_sql_fetchall("select table_name from information_schema.columns where column_name = '" + referenced_attribs + "';")
+                referenced_tables = list(res)
+                # to get row containing og_val in referenced_tables
+                for tables in referenced_tables:
+                    new_row = self.connectionHelper.execute_sql_fetchone_0("select * from " + tables + " where " + attrib + " = " + og_val + ";")
+                    #insert with updated value in tables
+                    col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tables,referenced_attribs))
+                    new_row[col_idx-1] = temp_val
+                    self.connectionHelper.execute_sql([insert_row(tables,tuple(new_row))])
+
+    def cascade_delete(self,attrib,global_join_graph,temp_val,og_val):
+        for join_keys in global_join_graph:
+            if attrib in join_keys:
+                tuple_with_attrib = copy.deepcopy(attrib)
+        #insert temp_val in referenced tables except attrib
+        for referenced_attribs in tuple_with_attrib:
+            if(referenced_attribs != attrib):
+                res = self.connectionHelper.execute_sql_fetchall("select table_name from information_schema.columns where column_name = '" + referenced_attribs + "';")
+                referenced_tables = list(res)
+                # to get row containing og_val in referenced_tables
+                for tables in referenced_tables:
+                    self.connectionHelper.execute_sql([delete_row(tables,temp_val)])
+                
+    def insert_and_delete_extra_row(self,query,tabname,extra_row,attrib,temp_val,og_val):
         res = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
         print(f"Before Insert: {res}")
+        #1.temp_val <--- inserted value of attribute attrib 
+        #2.check whether attrib in JG(E)
+        #3.return the tuple which contains atrrib
+        #4.search the table that contains the column names in tuple 
+        #5.query for getting 4 -->  select table_name from information_schema.columns where column_name = 'your_column_name'
+
         self.connectionHelper.execute_sql(
                             ["BEGIN;",insert_row(tabname,tuple(extra_row))])
         res1 = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
         print(f"After Insert: {res1}")
         new_result = self.app.doJob(query)
         print(f"New Res: {new_result}")
+        if attrib in self.global_join_graph:
+            self.cascade_insert(attrib,self.global_join_graph,temp_val,og_val)
         #print(f"gb: {new_result}")
         #size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
         #print(f" res:{res} des:{des}")
@@ -71,10 +109,13 @@ class ModifiedGroupBy(GroupByBase):
             print(f"New Res1: {new_result}")
         self.connectionHelper.execute_sql(
                 [delete_row(tabname,temp_val,attrib)])
+        if attrib in self.global_join_graph:
+            self.cascade_delete(attrib,self.global_join_graph,temp_val,og_val)
         res2 = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
         print(f"After Delete: {res2}")
     
     def int_increment(self,row1,attrib_list,local_attrib_dict,attrib,tabname):
+        original_val = attrib_list[0]
         temp_val = int(attrib_list[0]+1)
         extra_row = copy.deepcopy(row1.values)
         for i, item in enumerate(extra_row):
@@ -83,7 +124,7 @@ class ModifiedGroupBy(GroupByBase):
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
                     #print(col_idx)
         extra_row[col_idx]= temp_val
-        return extra_row,temp_val,col_idx
+        return extra_row,temp_val,col_idx,original_val
     
     def int_decrement(self,row1,attrib_list,local_attrib_dict,attrib,tabname):
         temp_val = int(attrib_list[0]-1)
@@ -135,9 +176,9 @@ class ModifiedGroupBy(GroupByBase):
                 attrib_list = (vals.values).tolist()
                 #print(f'{attrib_list[0]} : {type(attrib_list[0])}')
                 if(type(attrib_list[0])==int and self.checkWhetherAllSame(attrib_list)):
-                    extra_row,temp_val,col_idx = self.int_increment(row1,attrib_list,local_attrib_dict,attrib,tabname)
+                    extra_row,temp_val,col_idx,og_val= self.int_increment(row1,attrib_list,local_attrib_dict,attrib,tabname)
                     try:
-                        self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,temp_val)
+                        self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,temp_val,og_val)
                         #extra_row[col_idx-1]=temp_val-1
                     except Exception as error:
                         print("Error Occurred in  Group By Integer. Error: " + str(error))
