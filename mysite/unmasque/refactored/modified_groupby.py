@@ -3,6 +3,7 @@
 import pandas as pd 
 import copy
 import datetime
+from decimal import *
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from ..refactored.abstract.GroupByBase import GroupByBase
@@ -53,20 +54,38 @@ class ModifiedGroupBy(GroupByBase):
         return all(x == items[0] for x in items) 
     
     def cascade_insert(self,attrib,global_join_graph,temp_val,og_val):
+        tuple_with_attrib=[]
         for join_keys in global_join_graph:
             if attrib in join_keys:
-                tuple_with_attrib = copy.deepcopy(attrib)
+                tuple_with_attrib = copy.deepcopy(join_keys)
         #insert temp_val in referenced tables except attrib
         for referenced_attribs in tuple_with_attrib:
             if(referenced_attribs != attrib):
                 res = self.connectionHelper.execute_sql_fetchall("select table_name from information_schema.columns where column_name = '" + referenced_attribs + "';")
-                referenced_tables = list(res)
+                inter_tables = list(res)
+                modified_res=[]
+                for sublist in inter_tables[0]:
+                    for item in sublist:
+                        modified_res.append(item)
+                referenced_tables = []
+                relations = self.core_relations
+                for element in modified_res:
+                    if element in relations:
+                        referenced_tables.append(element)
                 # to get row containing og_val in referenced_tables
                 for tables in referenced_tables:
-                    new_row = self.connectionHelper.execute_sql_fetchone_0("select * from " + tables + " where " + attrib + " = " + og_val + ";")
+                    int_row = self.connectionHelper.execute_sql_fetchall(f"select * from  {tables} where {referenced_attribs} = '{og_val}';")
                     #insert with updated value in tables
+                    new_row1= int_row[0]
+                    new_row=list(new_row1[0])
                     col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tables,referenced_attribs))
+                    print(f"col_idx: {col_idx} type ={type(col_idx)}")
                     new_row[col_idx-1] = temp_val
+                    for i, item in enumerate(new_row):
+                        if isinstance(item, datetime.date):
+                            new_row[i] = str(item)
+                        if isinstance(item,Decimal):
+                            new_row[i] = float(item)
                     self.connectionHelper.execute_sql([insert_row(tables,tuple(new_row))])
 
     def cascade_delete(self,attrib,global_join_graph,temp_val,og_val):
@@ -97,7 +116,8 @@ class ModifiedGroupBy(GroupByBase):
         print(f"After Insert: {res1}")
         new_result = self.app.doJob(query)
         print(f"New Res: {new_result}")
-        if attrib in self.global_join_graph:
+        if any(attrib in sublist for sublist in self.global_join_graph):
+            print("in if")
             self.cascade_insert(attrib,self.global_join_graph,temp_val,og_val)
         #print(f"gb: {new_result}")
         #size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
