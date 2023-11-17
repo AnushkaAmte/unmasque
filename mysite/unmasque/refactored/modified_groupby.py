@@ -127,6 +127,7 @@ class ModifiedGroupBy(GroupByBase):
         return extra_row,temp_val,col_idx,original_val
     
     def int_decrement(self,row1,attrib_list,local_attrib_dict,attrib,tabname):
+        og_val = attrib_list[0]
         temp_val = int(attrib_list[0]-1)
         extra_row = copy.deepcopy(row1.values)
         for i, item in enumerate(extra_row):
@@ -135,10 +136,11 @@ class ModifiedGroupBy(GroupByBase):
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
                     #print(col_idx)
         extra_row[col_idx]= temp_val
-        return extra_row,temp_val,col_idx
+        return extra_row,temp_val,col_idx,og_val
     
     def date_increment(self,row1,attrib_list,local_attrib_dict,attrib,tabname):
         print(f"og Date: {attrib_list[0]}")
+        og_val = attrib_list[0]
         temp_val = attrib_list[0]+datetime.timedelta(days=1)
         print(f"tv in fn: {temp_val}")
         print(f"type date: {type(temp_val)}")
@@ -149,11 +151,12 @@ class ModifiedGroupBy(GroupByBase):
             if isinstance(item, datetime.date):
                 extra_row[i] = str(item)
                     #print(col_idx)
-        return extra_row,temp_val,col_idx
+        return extra_row,temp_val,col_idx,og_val
     
 
     def date_decrement(self,row1,attrib_list,local_attrib_dict,attrib,tabname):
         print(f"og Date: {attrib_list[0]}")
+        og_val = attrib_list[0]
         temp_val = attrib_list[0]-datetime.timedelta(days=1)
         print(f"tv in fn: {temp_val}")
         print(f"type date: {type(temp_val)}")
@@ -164,7 +167,7 @@ class ModifiedGroupBy(GroupByBase):
             if isinstance(item, datetime.date):
                 extra_row[i] = str(item)
                     #print(col_idx)
-        return extra_row,temp_val,col_idx
+        return extra_row,temp_val,col_idx,og_val
 
     def doExtractJob1(self,query):
         local_attrib_dict = self.generateDict(self.global_min_instance_dict)
@@ -185,13 +188,13 @@ class ModifiedGroupBy(GroupByBase):
                         self.connectionHelper.execute_sql(["ROLLBACK;"])
                         exit(1)
                 elif(type(attrib_list[0])==date and self.checkWhetherAllSame(attrib_list)):
-                    extra_row,temp_val,col_idx = self.date_increment(row1,attrib_list,local_attrib_dict,attrib,tabname)
+                    extra_row,temp_val,col_idx,og_val = self.date_increment(row1,attrib_list,local_attrib_dict,attrib,tabname)
                     print(f"date: {temp_val}type date1: {type(temp_val)}")
                     temp_val.strftime("%Y-%d-%m")
                     print(f"date: {temp_val}type date1: {type(temp_val)}")
                     
                     try:
-                        self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,str(temp_val))
+                        self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,str(temp_val),og_val)
                         extra_row[col_idx-1]
                     except Exception as error:
                         print("Error Occurred in  Group By Date. Error: " + str(error))
@@ -209,22 +212,22 @@ class ModifiedGroupBy(GroupByBase):
                 attrib_list = (vals.values).tolist()
                 #print(f'{attrib_list[0]} : {type(attrib_list[0])}')
                 if(type(attrib_list[0])==int and self.checkWhetherAllSame(attrib_list)):
-                    extra_row,temp_val,col_idx = self.int_decrement(row1,attrib_list,local_attrib_dict,attrib,tabname)
+                    extra_row,temp_val,col_idx,og_val = self.int_decrement(row1,attrib_list,local_attrib_dict,attrib,tabname)
                     try:
-                        self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,temp_val)
+                        self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,temp_val,og_val)
                         #extra_row[col_idx-1]=temp_val-1
                     except Exception as error:
                         print("Error Occurred in  Group By Integer. Error: " + str(error))
                         self.connectionHelper.execute_sql(["ROLLBACK;"])
                         exit(1)
                 elif(type(attrib_list[0])==date):
-                    extra_row,temp_val,col_idx = self.date_decrement(row1,attrib_list,local_attrib_dict,attrib,tabname)
+                    extra_row,temp_val,col_idx,og_val = self.date_decrement(row1,attrib_list,local_attrib_dict,attrib,tabname)
                     print(f"date: {temp_val}type date1: {type(temp_val)}")
                     temp_val.strftime("%Y-%d-%m")
                     print(f"date: {temp_val}type date1: {type(temp_val)}")
                     
                     try:
-                        self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,str(temp_val))
+                        self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,str(temp_val),og_val)
                         extra_row[col_idx-1]
                     except Exception as error:
                         print("Error Occurred in  Group By Date. Error: " + str(error))
