@@ -34,11 +34,13 @@ class EquiJoin(WhereClause):
     def __init__(self, connectionHelper,
                  global_key_lists,
                  core_relations,
-                 global_min_instance_dict):
+                 global_min_instance_dict,
+                 group_by_attrib):
         super().__init__(connectionHelper,
                          global_key_lists,
                          core_relations,
-                         global_min_instance_dict)
+                         global_min_instance_dict,
+                         group_by_attrib)
         # join data
         self.global_join_instance_dict = {}
         self.global_component_dict = {}

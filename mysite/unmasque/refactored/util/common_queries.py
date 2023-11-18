@@ -36,6 +36,8 @@ def get_col_idx(tabname,attrib):
 def get_restore_name(tab):
     return tab + "_restore"
 
+def get_max_val(tab,attr):
+    return f"select max({attr}) from {tab};"
 
 def get_min_max_ctid(tab):
     return "select min(ctid), max(ctid) from " + tab + ";"

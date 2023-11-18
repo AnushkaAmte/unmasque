@@ -109,12 +109,12 @@ class ModifiedGroupBy(GroupByBase):
                     self.connectionHelper.execute_sql([delete_row(tables,temp_val,referenced_attribs)])
                 
     def insert_and_delete_extra_row(self,query,tabname,extra_row,attrib,temp_val,og_val):
-        res = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
-        print(f"Before Insert: {res}")
+        #res = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
+        #print(f"Before Insert: {res}")
         self.connectionHelper.execute_sql(
                             ["BEGIN;",insert_row(tabname,tuple(extra_row))])
-        res1 = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
-        print(f"After Insert: {res1}")
+        #res1 = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
+        #print(f"After Insert: {res1}")
         if any(attrib in sublist for sublist in self.global_join_graph):
             self.cascade_insert(attrib,self.global_join_graph,temp_val,og_val)
         new_result = self.app.doJob(query)
@@ -128,8 +128,8 @@ class ModifiedGroupBy(GroupByBase):
         for join_keys in self.global_join_graph:
             if attrib in join_keys:
                 self.cascade_delete(attrib,self.global_join_graph,temp_val,og_val)
-        res2 = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
-        print(f"After Delete: {res2}")
+        #res2 = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
+        #print(f"After Delete: {res2}")
     
     def int_increment(self,row1,attrib_list,local_attrib_dict,attrib,tabname):
         original_val = attrib_list[0]
@@ -196,7 +196,6 @@ class ModifiedGroupBy(GroupByBase):
                     
                     try:
                         self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,str(temp_val),og_val)
-                        extra_row[col_idx-1]
                     except Exception as error:
                         print("Error Occurred in  Group By Date. Error: " + str(error))
                         self.connectionHelper.execute_sql(["ROLLBACK;"])
@@ -225,7 +224,6 @@ class ModifiedGroupBy(GroupByBase):
                     
                     try:
                         self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,str(temp_val),og_val)
-                        extra_row[col_idx-1]
                     except Exception as error:
                         print("Error Occurred in  Group By Date. Error: " + str(error))
                         self.connectionHelper.execute_sql(["ROLLBACK;"])

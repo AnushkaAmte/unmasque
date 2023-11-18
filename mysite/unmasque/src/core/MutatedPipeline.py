@@ -5,6 +5,7 @@ from ...refactored.aggregation import Aggregation
 from ...refactored.cs2 import Cs2
 from ...refactored.equi_join import EquiJoin
 from ...refactored.filter import Filter
+from ...refactored.modified_filter import ModifiedFilter
 from ...refactored.from_clause import FromClause
 from ...refactored.modified_groupby import ModifiedGroupBy
 from ...refactored.limit import Limit
@@ -65,7 +66,7 @@ def extract(query):
     ej = EquiJoin(connectionHelper,
                   fc.get_key_lists(),
                   fc.core_relations,
-                  nm.global_min_instance_dict)
+                  nm.global_min_instance_dict,[])
     check = ej.doJob(query)
     time_profile.update_for_where_clause(ej.local_elapsed_time)
     if not check:
@@ -96,18 +97,35 @@ def extract(query):
     '''
     Filters Extraction
     '''
-    fl = Filter(connectionHelper,
+    fl = ModifiedFilter(connectionHelper,
                 fc.get_key_lists(),
                 fc.core_relations,
                 nm.global_min_instance_dict,
-                ej.global_key_attributes)
+                ej.global_key_attributes,
+                ej.global_join_graph,
+                gb.group_by_attrib)
     check = fl.doJob(query)
+    print(f"Check is {check}")
     time_profile.update_for_where_clause(fl.local_elapsed_time)
     if not check:
         print("Cannot find Filter Predicates.")
     if not fl.done:
         print("Some error while Filter Predicate extraction. Aborting extraction!")
         return None, time_profile
+    
+    # fl = Filter(connectionHelper,
+    #             fc.get_key_lists(),
+    #             fc.core_relations,
+    #             nm.global_min_instance_dict,
+    #             ej.global_key_attributes)
+    # check = fl.doJob(query)
+    # print(f"Check is {check}")
+    # time_profile.update_for_where_clause(fl.local_elapsed_time)
+    # if not check:
+    #     print("Cannot find Filter Predicates.")
+    # if not fl.done:
+    #     print("Some error while Filter Predicate extraction. Aborting extraction!")
+    #     return None, time_profile
 
     '''
     Projection Extraction

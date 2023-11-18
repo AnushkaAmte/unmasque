@@ -10,7 +10,7 @@ class WhereClause(Base):
     def __init__(self, connectionHelper,
                  global_key_lists,
                  core_relations,
-                 global_min_instance_dict):
+                 global_min_instance_dict,group_by_attrib):
         super().__init__(connectionHelper, "Where_clause")
         self.app = Executable(connectionHelper)
 
@@ -22,7 +22,7 @@ class WhereClause(Base):
 
         # from view minimizer
         self.global_min_instance_dict = global_min_instance_dict
-
+        self.group_by_attrib = group_by_attrib
         # init data
         self.global_attrib_types = []
         self.global_all_attribs = []
