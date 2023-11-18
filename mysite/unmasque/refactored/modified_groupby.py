@@ -5,7 +5,6 @@ import copy
 import datetime
 from decimal import *
 from datetime import date
-from dateutil.relativedelta import relativedelta
 from ..refactored.abstract.GroupByBase import GroupByBase
 from ..refactored.util.common_queries import get_row_count, alter_table_rename_to, get_min_max_ctid, \
     drop_view, drop_table, create_table_as_select_star_from, get_ctid_from, get_tabname_1, \
@@ -79,7 +78,6 @@ class ModifiedGroupBy(GroupByBase):
                     new_row1= int_row[0]
                     new_row=list(new_row1[0])
                     col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tables,referenced_attribs))
-                    print(f"col_idx: {col_idx} type ={type(col_idx)}")
                     new_row[col_idx-1] = temp_val
                     for i, item in enumerate(new_row):
                         if isinstance(item, datetime.date):
@@ -89,39 +87,37 @@ class ModifiedGroupBy(GroupByBase):
                     self.connectionHelper.execute_sql([insert_row(tables,tuple(new_row))])
 
     def cascade_delete(self,attrib,global_join_graph,temp_val,og_val):
+        print("in del")
         for join_keys in global_join_graph:
             if attrib in join_keys:
-                tuple_with_attrib = copy.deepcopy(attrib)
+                tuple_with_attrib = copy.deepcopy(join_keys)
         #insert temp_val in referenced tables except attrib
         for referenced_attribs in tuple_with_attrib:
             if(referenced_attribs != attrib):
                 res = self.connectionHelper.execute_sql_fetchall("select table_name from information_schema.columns where column_name = '" + referenced_attribs + "';")
-                referenced_tables = list(res)
-                # to get row containing og_val in referenced_tables
+                inter_tables = list(res)
+                modified_res=[]
+                for sublist in inter_tables[0]:
+                    for item in sublist:
+                        modified_res.append(item)
+                referenced_tables = []
+                relations = self.core_relations
+                for element in modified_res:
+                    if element in relations:
+                        referenced_tables.append(element)
                 for tables in referenced_tables:
-                    self.connectionHelper.execute_sql([delete_row(tables,temp_val)])
+                    self.connectionHelper.execute_sql([delete_row(tables,temp_val,referenced_attribs)])
                 
     def insert_and_delete_extra_row(self,query,tabname,extra_row,attrib,temp_val,og_val):
         res = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
         print(f"Before Insert: {res}")
-        #1.temp_val <--- inserted value of attribute attrib 
-        #2.check whether attrib in JG(E)
-        #3.return the tuple which contains atrrib
-        #4.search the table that contains the column names in tuple 
-        #5.query for getting 4 -->  select table_name from information_schema.columns where column_name = 'your_column_name'
-
         self.connectionHelper.execute_sql(
                             ["BEGIN;",insert_row(tabname,tuple(extra_row))])
         res1 = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
         print(f"After Insert: {res1}")
-        new_result = self.app.doJob(query)
-        print(f"New Res: {new_result}")
         if any(attrib in sublist for sublist in self.global_join_graph):
-            print("in if")
             self.cascade_insert(attrib,self.global_join_graph,temp_val,og_val)
-        #print(f"gb: {new_result}")
-        #size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
-        #print(f" res:{res} des:{des}")
+        new_result = self.app.doJob(query)
         if(len(new_result)== 3):
             self.group_by_attrib.append(attrib)
             self.has_groupby = True
@@ -129,8 +125,9 @@ class ModifiedGroupBy(GroupByBase):
             print(f"New Res1: {new_result}")
         self.connectionHelper.execute_sql(
                 [delete_row(tabname,temp_val,attrib)])
-        if attrib in self.global_join_graph:
-            self.cascade_delete(attrib,self.global_join_graph,temp_val,og_val)
+        for join_keys in self.global_join_graph:
+            if attrib in join_keys:
+                self.cascade_delete(attrib,self.global_join_graph,temp_val,og_val)
         res2 = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
         print(f"After Delete: {res2}")
     
@@ -142,7 +139,6 @@ class ModifiedGroupBy(GroupByBase):
             if isinstance(item, datetime.date):
                 extra_row[i] = str(item)
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
-                    #print(col_idx)
         extra_row[col_idx]= temp_val
         return extra_row,temp_val,col_idx,original_val
     
@@ -154,64 +150,49 @@ class ModifiedGroupBy(GroupByBase):
             if isinstance(item, datetime.date):
                 extra_row[i] = str(item)
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
-                    #print(col_idx)
         extra_row[col_idx]= temp_val
         return extra_row,temp_val,col_idx,og_val
     
     def date_increment(self,row1,attrib_list,local_attrib_dict,attrib,tabname):
-        print(f"og Date: {attrib_list[0]}")
         og_val = attrib_list[0]
         temp_val = attrib_list[0]+datetime.timedelta(days=1)
-        print(f"tv in fn: {temp_val}")
-        print(f"type date: {type(temp_val)}")
         extra_row = copy.deepcopy(row1.values)
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
         extra_row[col_idx]= temp_val
         for i, item in enumerate(extra_row):
             if isinstance(item, datetime.date):
                 extra_row[i] = str(item)
-                    #print(col_idx)
         return extra_row,temp_val,col_idx,og_val
     
 
     def date_decrement(self,row1,attrib_list,local_attrib_dict,attrib,tabname):
-        print(f"og Date: {attrib_list[0]}")
         og_val = attrib_list[0]
         temp_val = attrib_list[0]-datetime.timedelta(days=1)
-        print(f"tv in fn: {temp_val}")
-        print(f"type date: {type(temp_val)}")
         extra_row = copy.deepcopy(row1.values)
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
         extra_row[col_idx]= temp_val
         for i, item in enumerate(extra_row):
             if isinstance(item, datetime.date):
                 extra_row[i] = str(item)
-                    #print(col_idx)
         return extra_row,temp_val,col_idx,og_val
 
     def doExtractJob1(self,query):
         local_attrib_dict = self.generateDict(self.global_min_instance_dict)
-        #print(f"Local: {local_attrib_dict.keys()}")
         for tabname in local_attrib_dict:
-            #col_idx=0;
             row1 = copy.deepcopy(local_attrib_dict[tabname].iloc[0])
             for attrib,vals in local_attrib_dict[tabname].items():
                 attrib_list = (vals.values).tolist()
-                #print(f'{attrib_list[0]} : {type(attrib_list[0])}')
                 if(type(attrib_list[0])==int and self.checkWhetherAllSame(attrib_list)):
                     extra_row,temp_val,col_idx,og_val= self.int_increment(row1,attrib_list,local_attrib_dict,attrib,tabname)
                     try:
                         self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,temp_val,og_val)
-                        #extra_row[col_idx-1]=temp_val-1
                     except Exception as error:
                         print("Error Occurred in  Group By Integer. Error: " + str(error))
                         self.connectionHelper.execute_sql(["ROLLBACK;"])
                         exit(1)
                 elif(type(attrib_list[0])==date and self.checkWhetherAllSame(attrib_list)):
                     extra_row,temp_val,col_idx,og_val = self.date_increment(row1,attrib_list,local_attrib_dict,attrib,tabname)
-                    print(f"date: {temp_val}type date1: {type(temp_val)}")
                     temp_val.strftime("%Y-%d-%m")
-                    print(f"date: {temp_val}type date1: {type(temp_val)}")
                     
                     try:
                         self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,str(temp_val),og_val)
@@ -224,18 +205,14 @@ class ModifiedGroupBy(GroupByBase):
     
     def doExtractJob2(self,query):
         local_attrib_dict = self.generateDict(self.global_min_instance_dict)
-        #print(f"Local: {local_attrib_dict.keys()}")
         for tabname in local_attrib_dict:
-            #col_idx=0;
             row1 = copy.deepcopy(local_attrib_dict[tabname].iloc[0])
             for attrib,vals in local_attrib_dict[tabname].items():
                 attrib_list = (vals.values).tolist()
-                #print(f'{attrib_list[0]} : {type(attrib_list[0])}')
                 if(type(attrib_list[0])==int and self.checkWhetherAllSame(attrib_list)):
                     extra_row,temp_val,col_idx,og_val = self.int_decrement(row1,attrib_list,local_attrib_dict,attrib,tabname)
                     try:
                         self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,temp_val,og_val)
-                        #extra_row[col_idx-1]=temp_val-1
                     except Exception as error:
                         print("Error Occurred in  Group By Integer. Error: " + str(error))
                         self.connectionHelper.execute_sql(["ROLLBACK;"])
