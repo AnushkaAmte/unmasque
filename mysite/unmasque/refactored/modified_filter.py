@@ -56,28 +56,8 @@ class ModifiedFilter(WhereClause):
             for element in modified_res:
                 if element in relations:
                     referenced_tables.append(element)
-        #get table values in dataframe 
-        #get max of referenced_tables[i] of tuple_with_attrib[i] and store it in an array
-        max_val = -1
-        print(f"Ref tab {referenced_tables}")
-        for tab,attr in zip(referenced_tables,tuple_with_attrib):
-            #sql query to get max attr in tab
-            temp = self.connectionHelper.execute_sql_fetchone_0(get_max_val(tab,attr))
-            max_val = max(temp,max_val)
-
-        i = 0
-        for table in referenced_tables:
-            table_instance = {}
-            table_instance = copy.deepcopy(self.global_min_instance_dict[table])
-            col_idx = self.get_index(table_instance[0],tuple_with_attrib[i])
-            inter_tab_inst = copy.deepcopy(table_instance)
-            inter_tab_inst.pop(0)
-            sorted_table_inst = sorted(inter_tab_inst,key = lambda x:x[col_idx])
-            #check for duplicate values of tuple_with_attrib[i] in sorted_table_inst[col_idx]
-            print("Hello")
-            for row_no in (1,len(sorted_table_inst)-1):
-                if sorted_table_inst[row_no-1][col_idx] == sorted_table_inst[row_no][col_idx]:
-                    print("hello")                
+        
+       
 
     def get_filter_predicates(self, query):
         filter_attribs = []
