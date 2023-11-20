@@ -1,6 +1,10 @@
 import copy
 import math
-from ..refactored.util.common_queries import get_max_val
+from ..refactored.util.common_queries import get_row_count, alter_table_rename_to, get_min_max_ctid, \
+    drop_view, drop_table, create_table_as_select_star_from, get_ctid_from, get_tabname_4, \
+    create_view_as_select_star_where_ctid, create_table_as_select_star_from_ctid, get_tabname_6, get_star, \
+    get_restore_name,get_freq,delete_non_matching_rows,create_table_like,delete_non_matching_rows_str,get_max_val,\
+    drop_column,compute_join
 from .util.utils import isQ_result_empty, get_val_plus_delta, get_cast_value, \
     get_min_and_max_val, get_format, get_mid_val, is_left_less_than_right_by_cutoff
 from .abstract.where_clause import WhereClause
@@ -37,11 +41,8 @@ class ModifiedFilter(WhereClause):
 
     def preprocess(self,query,attrib):
         tuple_with_attrib=[]
-        print(f"Atttttrib {attrib}")
-        print(f"Glob {self.global_join_graph}")
         for join_keys in self.global_join_graph:
             if attrib in join_keys:
-                print("Idhar aana tha bc")
                 tuple_with_attrib = copy.deepcopy(join_keys)
         
         referenced_tables = []
@@ -57,6 +58,18 @@ class ModifiedFilter(WhereClause):
                 if element in relations:
                     referenced_tables.append(element)
         
+        for original_table in referenced_tables:
+            self.connectionHelper.execute_sql(
+                    ["SAVEPOINT preprocess;","BEGIN;", alter_table_rename_to(original_table,get_tabname_6(original_table)) , 
+                    create_table_as_select_star_from(original_table,get_tabname_6(original_table))])
+
+        for original_table,key_atrrib in zip(referenced_tables,tuple_with_attrib):
+            self.connectionHelper.execute_sql([drop_column(original_table,key_atrrib)])
+        
+        #join all the tables in referenced_tables and join on tuple_with_attrib
+        join_result = self.connectionHelper.execute_sql_fetchall(compute_join(referenced_tables,tuple_with_attrib))
+        print("Join Result is")
+        print(join_result[0])
        
 
     def get_filter_predicates(self, query):
@@ -80,6 +93,7 @@ class ModifiedFilter(WhereClause):
                                                   query, tabname)
                 else:
                     if 'int' in self.global_attrib_types_dict[(tabname,attrib)]:
+                        print("HELLLLLLLL")
                         self.preprocess(query,attrib)
                             
 

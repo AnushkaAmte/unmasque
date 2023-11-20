@@ -33,6 +33,9 @@ def delete_non_matching_rows_str(tab,attrib,val):
 def get_col_idx(tabname,attrib):
     return f"select ordinal_position from information_schema.columns where table_schema = 'public' and table_name = '{tabname}' and column_name = '{attrib}';" 
 
+def drop_column(tabname,attrib):
+    return f"alter table {tabname} drop {attrib};"
+
 def get_restore_name(tab):
     return tab + "_restore"
 
@@ -62,6 +65,22 @@ def get_tabname_un(tab):
 
 def insert_row(tabname,value_list):
     return f"insert into {tabname} values {value_list};"
+
+def compute_join(tables,tuple_with_attrib):
+    s = "select * from "
+    size1 = len(tables)
+    for i in range(0,size1-1):
+        s += tables[i]+ "6" + ", "
+    s += tables[size1-1]+"6" + " "
+    s += "where "
+    size2 = len(tuple_with_attrib)
+    for i in range(0,size2):
+        for j in range(i+1,size2):
+            s += tuple_with_attrib[i] + " = " + tuple_with_attrib[j]
+            if(i != size2 - 2):
+                s += " and "
+    s +=";"
+    return s
 
 def delete_row(tabname,val,attrib):
     return f"delete from {tabname} where {attrib} = '{val}';"
