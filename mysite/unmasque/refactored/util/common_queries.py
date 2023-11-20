@@ -34,7 +34,10 @@ def get_col_idx(tabname,attrib):
     return f"select ordinal_position from information_schema.columns where table_schema = 'public' and table_name = '{tabname}' and column_name = '{attrib}';" 
 
 def drop_column(tabname,attrib):
-    return f"alter table {tabname} drop {attrib};"
+    return f"alter table {tabname} drop if exists {attrib};"
+
+def truncate_table(tabname):
+    return f" truncate table {tabname};"
 
 def get_restore_name(tab):
     return tab + "_restore"
@@ -67,6 +70,8 @@ def insert_row(tabname,value_list):
     return f"insert into {tabname} values {value_list};"
 
 def compute_join(tables,tuple_with_attrib):
+    print(f"tab: {tables}")
+    print(f" attr: {tuple_with_attrib}")
     s = "select * from "
     size1 = len(tables)
     for i in range(0,size1-1):
@@ -74,7 +79,7 @@ def compute_join(tables,tuple_with_attrib):
     s += tables[size1-1]+"6" + " "
     s += "where "
     size2 = len(tuple_with_attrib)
-    for i in range(0,size2):
+    for i in range(0,size2-1):
         for j in range(i+1,size2):
             s += tuple_with_attrib[i] + " = " + tuple_with_attrib[j]
             if(i != size2 - 2):

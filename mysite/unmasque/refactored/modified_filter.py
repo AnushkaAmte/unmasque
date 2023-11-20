@@ -4,7 +4,7 @@ from ..refactored.util.common_queries import get_row_count, alter_table_rename_t
     drop_view, drop_table, create_table_as_select_star_from, get_ctid_from, get_tabname_4, \
     create_view_as_select_star_where_ctid, create_table_as_select_star_from_ctid, get_tabname_6, get_star, \
     get_restore_name,get_freq,delete_non_matching_rows,create_table_like,delete_non_matching_rows_str,get_max_val,\
-    drop_column,compute_join
+    drop_column,compute_join,truncate_table
 from .util.utils import isQ_result_empty, get_val_plus_delta, get_cast_value, \
     get_min_and_max_val, get_format, get_mid_val, is_left_less_than_right_by_cutoff
 from .abstract.where_clause import WhereClause
@@ -31,6 +31,7 @@ class ModifiedFilter(WhereClause):
     def doActualJob(self, args):
         query = self.extract_params_from_args(args)
         self.do_init()
+        self.preprocess(query)
         self.filter_predicates = self.get_filter_predicates(query)
         return self.filter_predicates
 
@@ -39,16 +40,20 @@ class ModifiedFilter(WhereClause):
             if v == attrib:
                 return i
 
-    def preprocess(self,query,attrib):
+    def preprocess(self,query):
+        attrib_list = self.global_key_attributes
+        print(f"glob key attr: {self.global_key_attributes}")
         tuple_with_attrib=[]
-        for join_keys in self.global_join_graph:
-            if attrib in join_keys:
-                tuple_with_attrib = copy.deepcopy(join_keys)
-        
+        for attrib in attrib_list:
+            for join_keys in self.global_join_graph:
+                if attrib in join_keys:
+                    tuple_with_attrib = copy.deepcopy(join_keys)
+        print(f"tup attr: {tuple_with_attrib}")
         referenced_tables = []
         for referenced_attribs in tuple_with_attrib:    
             res = self.connectionHelper.execute_sql_fetchall("select table_name from information_schema.columns where column_name = '" + referenced_attribs + "';")
             inter_tables = list(res)
+            print(f"inter rtab: {inter_tables}")
             modified_res=[]
             for sublist in inter_tables[0]:
                 for item in sublist:
@@ -57,11 +62,13 @@ class ModifiedFilter(WhereClause):
             for element in modified_res:
                 if element in relations:
                     referenced_tables.append(element)
-        
-        for original_table in referenced_tables:
+        print(f"ref tab: {referenced_tables}")
+        print(f"core rel: {self.core_relations}")
+        for original_table in self.core_relations:
             self.connectionHelper.execute_sql(
                     ["SAVEPOINT preprocess;","BEGIN;", alter_table_rename_to(original_table,get_tabname_6(original_table)) , 
-                    create_table_as_select_star_from(original_table,get_tabname_6(original_table))])
+                    create_table_like(original_table,get_tabname_6(original_table))])
+       
 
         for original_table,key_atrrib in zip(referenced_tables,tuple_with_attrib):
             self.connectionHelper.execute_sql([drop_column(original_table,key_atrrib)])
@@ -81,7 +88,7 @@ class ModifiedFilter(WhereClause):
         for entry in self.global_attrib_types:
             # aoa change
             self.global_attrib_types_dict[(entry[0], entry[1])] = entry[2]
-
+        
         for i in range(len(self.core_relations)):
             tabname = self.core_relations[i]
             attrib_list = self.global_all_attribs[i]
@@ -91,11 +98,8 @@ class ModifiedFilter(WhereClause):
                     if attrib in self.group_by_attrib:
                         self.extract_filter_on_attrib(attrib, attrib_max_length, d_plus_value, filter_attribs,
                                                   query, tabname)
-                else:
-                    if 'int' in self.global_attrib_types_dict[(tabname,attrib)]:
-                        print("HELLLLLLLL")
-                        self.preprocess(query,attrib)
-                            
+                        
+                
 
                 # print("filter_attribs", filter_attribs)
         return filter_attribs
@@ -116,6 +120,7 @@ class ModifiedFilter(WhereClause):
 
     def checkAttribValueEffect(self, query, tabname, attrib, val):
         self.connectionHelper.execute_sql(["update " + tabname + " set " + attrib + " = " + str(val) + ";"])
+        print("hello there")
         new_result = self.app.doJob(query)
         if isQ_result_empty(new_result):
             self.revert_filter_changes(tabname)
