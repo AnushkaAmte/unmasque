@@ -4,7 +4,7 @@ from ..refactored.util.common_queries import get_row_count, alter_table_rename_t
     drop_view, drop_table, create_table_as_select_star_from, get_ctid_from, get_tabname_4, \
     create_view_as_select_star_where_ctid, create_table_as_select_star_from_ctid, get_tabname_6, get_star, \
     get_restore_name,get_freq,delete_non_matching_rows,create_table_like,delete_non_matching_rows_str,get_max_val,\
-    drop_column,compute_join,truncate_table
+    drop_column,compute_join,truncate_table,get_col_idx
 from .util.utils import isQ_result_empty, get_val_plus_delta, get_cast_value, \
     get_min_and_max_val, get_format, get_mid_val, is_left_less_than_right_by_cutoff
 from .abstract.where_clause import WhereClause
@@ -39,44 +39,83 @@ class ModifiedFilter(WhereClause):
         for i,v in enumerate(value_list):
             if v == attrib:
                 return i
-
+            
+    def compute_width(self,tabname):
+        col_list = self.connectionHelper.execute_sql_fetchall(f"select count(*) from information_schema.columns WHERE table_name = '{tabname}6';")
+        return col_list
+    
     def preprocess(self,query):
-        attrib_list = self.global_key_attributes
-        print(f"glob key attr: {self.global_key_attributes}")
-        tuple_with_attrib=[]
-        for attrib in attrib_list:
-            for join_keys in self.global_join_graph:
-                if attrib in join_keys:
-                    tuple_with_attrib = copy.deepcopy(join_keys)
-        print(f"tup attr: {tuple_with_attrib}")
-        referenced_tables = []
-        for referenced_attribs in tuple_with_attrib:    
-            res = self.connectionHelper.execute_sql_fetchall("select table_name from information_schema.columns where column_name = '" + referenced_attribs + "';")
-            inter_tables = list(res)
-            print(f"inter rtab: {inter_tables}")
-            modified_res=[]
-            for sublist in inter_tables[0]:
-                for item in sublist:
-                    modified_res.append(item)
-            relations = self.core_relations
-            for element in modified_res:
-                if element in relations:
-                    referenced_tables.append(element)
-        print(f"ref tab: {referenced_tables}")
-        print(f"core rel: {self.core_relations}")
+        #do this for all core relations kindof
+        #rn runs only once
         for original_table in self.core_relations:
             self.connectionHelper.execute_sql(
                     ["SAVEPOINT preprocess;","BEGIN;", alter_table_rename_to(original_table,get_tabname_6(original_table)) , 
                     create_table_like(original_table,get_tabname_6(original_table))])
+        #attrib_list = self.global_key_attributes
+        #print(f"glob key attr: {self.global_key_attributes}")
+     
+        tuple_with_attrib=[]
+        for attrib in self.global_join_graph:
+                tuple_with_attrib.append(attrib)
+        #print(f"tup attr: {tuple_with_attrib}")
+        referenced_tables = []
+        for attrib_tuple in tuple_with_attrib:    
+            ref_tab=[]
+            for referenced_attribs in attrib_tuple:
+                res = self.connectionHelper.execute_sql_fetchall("select table_name from information_schema.columns where column_name = '" + referenced_attribs + "';")
+                inter_tables = list(res)
+                modified_res=[]
+                for sublist in inter_tables[0]:
+                    for item in sublist:
+                        modified_res.append(item)
+                #print(f"inter rtab: {modified_res}")
+                relations = self.core_relations
+                for element in modified_res:
+                    if element in relations:
+                        ref_tab.append(element)
+                        #print(f"ref tab: {ref_tab}")
+            referenced_tables.append(ref_tab)
+        #print(f"refer tab: {referenced_tables}")
+        #print(f"core rel: {self.core_relations}")
        
 
-        for original_table,key_atrrib in zip(referenced_tables,tuple_with_attrib):
-            self.connectionHelper.execute_sql([drop_column(original_table,key_atrrib)])
+        for attr_tup,ref_tup in zip(tuple_with_attrib,referenced_tables):
+            for key_atrrib,original_table in zip(attr_tup,ref_tup):
+                self.connectionHelper.execute_sql([drop_column(original_table,key_atrrib)])
         
         #join all the tables in referenced_tables and join on tuple_with_attrib
-        join_result = self.connectionHelper.execute_sql_fetchall(compute_join(referenced_tables,tuple_with_attrib))
-        print("Join Result is")
-        print(join_result[0])
+        join_result=[]
+        size_list=[]
+        index=[]
+        for attr_tup,ref_tup in zip(tuple_with_attrib,referenced_tables):
+            temp =self.connectionHelper.execute_sql_fetchall(compute_join(ref_tup,attr_tup))
+            join_result.append(temp[0])
+            widths=[]
+            for tabname in ref_tup:
+                temp1 = self.compute_width(tabname)
+                widths.append(temp1[0][0][0])
+            size_list.append(widths)
+            col_idx=[]
+            for tabname,attrib in zip(ref_tup,attr_tup):
+                col_idx.append(self.connectionHelper.execute_sql_fetchone_0(get_col_idx(get_tabname_6(tabname),attrib)))
+            index.append(col_idx)
+
+
+        print(f"Join Result is {join_result}")
+        print(f"size list:{size_list}")
+        print(f"indexes :{index}")
+
+        
+
+
+
+            
+
+        
+
+
+        
+            
        
 
     def get_filter_predicates(self, query):
