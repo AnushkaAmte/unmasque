@@ -1,10 +1,12 @@
 import copy
 import math
+import datetime
+from decimal import *
 from ..refactored.util.common_queries import get_row_count, alter_table_rename_to, get_min_max_ctid, \
     drop_view, drop_table, create_table_as_select_star_from, get_ctid_from, get_tabname_4, \
     create_view_as_select_star_where_ctid, create_table_as_select_star_from_ctid, get_tabname_6, get_star, \
     get_restore_name,get_freq,delete_non_matching_rows,create_table_like,delete_non_matching_rows_str,get_max_val,\
-    drop_column,compute_join,truncate_table,get_col_idx
+    drop_column,compute_join,truncate_table,get_col_idx,insert_row,get_type,insert_col,flood_fill
 from .util.utils import isQ_result_empty, get_val_plus_delta, get_cast_value, \
     get_min_and_max_val, get_format, get_mid_val, is_left_less_than_right_by_cutoff
 from .abstract.where_clause import WhereClause
@@ -79,15 +81,14 @@ class ModifiedFilter(WhereClause):
         #print(f"core rel: {self.core_relations}")
        
 
-        for attr_tup,ref_tup in zip(tuple_with_attrib,referenced_tables):
-            for key_atrrib,original_table in zip(attr_tup,ref_tup):
-                self.connectionHelper.execute_sql([drop_column(original_table,key_atrrib)])
         
         #join all the tables in referenced_tables and join on tuple_with_attrib
         join_result=[]
         size_list=[]
         index=[]
         for attr_tup,ref_tup in zip(tuple_with_attrib,referenced_tables):
+            #ref_tup6 = [element + '6' for element in ref_tup]
+            #print(ref_tup6)
             temp =self.connectionHelper.execute_sql_fetchall(compute_join(ref_tup,attr_tup))
             join_result.append(temp[0])
             widths=[]
@@ -105,18 +106,53 @@ class ModifiedFilter(WhereClause):
         print(f"size list:{size_list}")
         print(f"indexes :{index}")
 
+        for i in range(len(join_result)):
+           
+            for res in join_result[i]:
+                size = size_list[i]
+                idx = index[i]
+                
+                temp_tab1 = res[:(size[0])]
+                temp_tab2= res[size[0]:] 
+                t_t1 = list(temp_tab1)
+                t_t2 = list(temp_tab2)
+                print(f"{t_t1} size={len(t_t1)}")
+                print(f"{t_t2} size={len(t_t2)}")
+               
+
+                for j, item in enumerate(t_t1):
+                    if isinstance(item, datetime.date):
+                        t_t1[j] = str(item)
+                    if isinstance(item, Decimal):
+                        t_t1[j] = float(item)
+                for k, item in enumerate(t_t2):
+                    if isinstance(item, datetime.date):
+                        t_t2[k] = str(item)
+                    if isinstance(item, Decimal):
+                        t_t2[k] = float(item)
+                print(f"{t_t1} size={len(t_t1)}")
+                print(f"{t_t2} size={len(t_t2)}")
+               
+                print(f"ref tab: {referenced_tables[i]}")
+                self.connectionHelper.execute_sql(
+                        ["BEGIN;",insert_row(referenced_tables[i][0],tuple(t_t1)),insert_row(referenced_tables[i][1],tuple(t_t2))])
+
+        for attr_tup,ref_tup in zip(tuple_with_attrib,referenced_tables):
+            for key_atrrib,original_table in zip(attr_tup,ref_tup):
+                self.connectionHelper.execute_sql([drop_column(original_table,key_atrrib)])
         
+        for attr_tup,ref_tup in zip(tuple_with_attrib,referenced_tables):
+            for key_atrrib,original_table in zip(attr_tup,ref_tup):
+               
+                datatype = self.connectionHelper.execute_sql_fetchall(get_type(get_tabname_6(original_table),key_atrrib))
+                print(f"att: {key_atrrib} type: {datatype[0][0][0]}")
+                self.connectionHelper.execute_sql([insert_col(original_table,key_atrrib,datatype[0][0][0])])
+                self.connectionHelper.execute_sql([flood_fill(original_table,key_atrrib)])
+                ans = self.connectionHelper.execute_sql_fetchall(f"select {key_atrrib} from {original_table}")
+                print(f"attr : {key_atrrib} tab: {original_table}")
+                print(ans)
 
-
-
-            
-
-        
-
-
-        
-            
-       
+  
 
     def get_filter_predicates(self, query):
         filter_attribs = []

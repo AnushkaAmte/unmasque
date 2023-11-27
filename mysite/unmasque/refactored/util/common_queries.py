@@ -34,7 +34,7 @@ def get_col_idx(tabname,attrib):
     return f"select ordinal_position from information_schema.columns where table_schema = 'public' and table_name = '{tabname}' and column_name = '{attrib}';" 
 
 def drop_column(tabname,attrib):
-    return f"alter table {tabname} drop if exists {attrib};"
+    return f"alter table {tabname} drop column if exists {attrib};"
 
 def truncate_table(tabname):
     return f" truncate table {tabname};"
@@ -68,6 +68,16 @@ def get_tabname_un(tab):
 
 def insert_row(tabname,value_list):
     return f"insert into {tabname} values {value_list};"
+
+def insert_col(tabname,attrib,datatype):
+    return f" alter table {tabname} add {attrib} {datatype};"
+
+
+def get_type(tabname,attrib):
+    return f" select data_type from information_schema.columns where table_name = '{tabname}' and column_name = '{attrib}';"
+
+def flood_fill(tabname,attrib):
+    return f"update {tabname} set {attrib} = subquery.row_number from ( select ctid,row_number() over (order by ctid) as row_number from {tabname}) as subquery where {tabname}.ctid = subquery.ctid;"
 
 def compute_join(tables,tuple_with_attrib):
     print(f"tab: {tables}")
