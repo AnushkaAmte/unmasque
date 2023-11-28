@@ -78,10 +78,7 @@ class ModifiedFilter(WhereClause):
                         #print(f"ref tab: {ref_tab}")
             referenced_tables.append(ref_tab)
         #print(f"refer tab: {referenced_tables}")
-        #print(f"core rel: {self.core_relations}")
-       
-
-        
+        #print(f"core rel: {self.core_relations}"
         #join all the tables in referenced_tables and join on tuple_with_attrib
         join_result=[]
         size_list=[]
@@ -100,8 +97,6 @@ class ModifiedFilter(WhereClause):
             for tabname,attrib in zip(ref_tup,attr_tup):
                 col_idx.append(self.connectionHelper.execute_sql_fetchone_0(get_col_idx(get_tabname_6(tabname),attrib)))
             index.append(col_idx)
-
-
         print(f"Join Result is {join_result}")
         print(f"size list:{size_list}")
         print(f"indexes :{index}")
@@ -118,8 +113,6 @@ class ModifiedFilter(WhereClause):
                 t_t2 = list(temp_tab2)
                 print(f"{t_t1} size={len(t_t1)}")
                 print(f"{t_t2} size={len(t_t2)}")
-               
-
                 for j, item in enumerate(t_t1):
                     if isinstance(item, datetime.date):
                         t_t1[j] = str(item)
@@ -136,17 +129,12 @@ class ModifiedFilter(WhereClause):
                 print(f"ref tab: {referenced_tables[i]}")
                 self.connectionHelper.execute_sql(
                         ["BEGIN;",insert_row(referenced_tables[i][0],tuple(t_t1)),insert_row(referenced_tables[i][1],tuple(t_t2))])
-
-        for attr_tup,ref_tup in zip(tuple_with_attrib,referenced_tables):
-            for key_atrrib,original_table in zip(attr_tup,ref_tup):
-                self.connectionHelper.execute_sql([drop_column(original_table,key_atrrib)])
         
         for attr_tup,ref_tup in zip(tuple_with_attrib,referenced_tables):
             for key_atrrib,original_table in zip(attr_tup,ref_tup):
                
                 datatype = self.connectionHelper.execute_sql_fetchall(get_type(get_tabname_6(original_table),key_atrrib))
                 print(f"att: {key_atrrib} type: {datatype[0][0][0]}")
-                self.connectionHelper.execute_sql([insert_col(original_table,key_atrrib,datatype[0][0][0])])
                 self.connectionHelper.execute_sql([flood_fill(original_table,key_atrrib)])
                 ans = self.connectionHelper.execute_sql_fetchall(f"select {key_atrrib} from {original_table}")
                 print(f"attr : {key_atrrib} tab: {original_table}")
