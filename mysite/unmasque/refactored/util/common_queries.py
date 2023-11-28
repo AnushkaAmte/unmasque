@@ -79,6 +79,13 @@ def get_type(tabname,attrib):
 def flood_fill(tabname,attrib):
     return f"update {tabname} set {attrib} = subquery.row_number from ( select ctid,row_number() over (order by ctid) as row_number from {tabname}) as subquery where {tabname}.ctid = subquery.ctid;"
 
+def sort_insert(tabname,attrib):
+    return f"insert into {tabname} select * from new_table order by {attrib};"
+
+def update_n_rows(tabname,attrib,counter,val):
+    return f"WITH OrderedRows AS ( SELECT * FROM {tabname} ORDER BY checking LIMIT {counter} ) UPDATE {tabname} SET {attrib} = {val} FROM OrderedRows WHERE {tabname}.checking = OrderedRows.checking;"
+
+
 def compute_join(tables,tuple_with_attrib):
     print(f"tab: {tables}")
     print(f" attr: {tuple_with_attrib}")

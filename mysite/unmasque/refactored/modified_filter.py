@@ -6,7 +6,7 @@ from ..refactored.util.common_queries import get_row_count, alter_table_rename_t
     drop_view, drop_table, create_table_as_select_star_from, get_ctid_from, get_tabname_4, \
     create_view_as_select_star_where_ctid, create_table_as_select_star_from_ctid, get_tabname_6, get_star, \
     get_restore_name,get_freq,delete_non_matching_rows,create_table_like,delete_non_matching_rows_str,get_max_val,\
-    drop_column,compute_join,truncate_table,get_col_idx,insert_row,get_type,insert_col,flood_fill
+    drop_column,compute_join,truncate_table,get_col_idx,insert_row,get_type,insert_col,flood_fill,sort_insert,update_n_rows
 from .util.utils import isQ_result_empty, get_val_plus_delta, get_cast_value, \
     get_min_and_max_val, get_format, get_mid_val, is_left_less_than_right_by_cutoff
 from .abstract.where_clause import WhereClause
@@ -136,11 +136,11 @@ class ModifiedFilter(WhereClause):
                 datatype = self.connectionHelper.execute_sql_fetchall(get_type(get_tabname_6(original_table),key_atrrib))
                 print(f"att: {key_atrrib} type: {datatype[0][0][0]}")
                 self.connectionHelper.execute_sql([flood_fill(original_table,key_atrrib)])
-                ans = self.connectionHelper.execute_sql_fetchall(f"select {key_atrrib} from {original_table}")
+                ans = self.connectionHelper.execute_sql_fetchall(f"select * from {original_table}")
                 print(f"attr : {key_atrrib} tab: {original_table}")
-                print(ans)
+                print(ans[0])
 
-  
+
 
     def get_filter_predicates(self, query):
         filter_attribs = []
@@ -158,8 +158,7 @@ class ModifiedFilter(WhereClause):
             total_attribs = total_attribs + len(attrib_list)
             for attrib in attrib_list:
                 if attrib not in self.global_key_attributes:  # filter is allowed only on non-key attribs
-                    if attrib in self.group_by_attrib:
-                        self.extract_filter_on_attrib(attrib, attrib_max_length, d_plus_value, filter_attribs,
+                    self.extract_filter_on_attrib(attrib, attrib_max_length, d_plus_value, filter_attribs,
                                                   query, tabname)
                         
                 
@@ -170,7 +169,11 @@ class ModifiedFilter(WhereClause):
     def extract_filter_on_attrib(self, attrib, attrib_max_length, d_plus_value, filter_attribs, query, tabname):
 
         if 'int' in self.global_attrib_types_dict[(tabname, attrib)]:
-            self.handle_date_or_int_filter('int', attrib, d_plus_value, filter_attribs, tabname, query)
+            if attrib in self.group_by_attrib:
+                self.handle_date_or_int_filter('int', attrib, d_plus_value, filter_attribs, tabname, query)
+            else:
+                print(f"Tabname is {tabname}")
+                self.having_int(query,attrib,tabname)    
 
         elif 'date' in self.global_attrib_types_dict[(tabname, attrib)]:
             self.handle_date_or_int_filter('date', attrib, d_plus_value, filter_attribs, tabname, query)
@@ -189,6 +192,32 @@ class ModifiedFilter(WhereClause):
             self.revert_filter_changes(tabname)
             return False
         return True
+    
+    def check_lower_bound(self,query,attrib,tabname,min_val):
+        try:
+            self.connectionHelper.execute_sql(["SAVEPOINT fl;","BEGIN;",insert_col(tabname,'checking','INT'),flood_fill(tabname,'checking')])
+            size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
+            for i in range(1,size+1):
+                self.connectionHelper.execute_sql([update_n_rows(tabname,attrib,i,min_val)])
+                res = self.app.doJob(query)
+                if isQ_result_empty(res):
+                    flag = 1
+                    print(f"Lower bound exists on {attrib}")
+                    break
+            if flag != 1:
+                print(f"No lower bound on {attrib}")
+            self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT fl;"])
+        except Exception as error:
+            print("Error occured while getting lower bound")
+            self.connectionHelper.execute_sql(["ROLLBACK;"])
+            
+
+    def having_int(self,query,attrib,tabname):
+        self.connectionHelper.execute_sql(["Begin;",create_table_as_select_star_from('new_table',tabname),
+                                           truncate_table(tabname),sort_insert(tabname,attrib),
+                                           drop_table('new_table')])
+        min_val_domain, max_val_domain = get_min_and_max_val('int')
+        self.check_lower_bound(query,attrib,tabname,min_val_domain)
 
     def handle_numeric_filter(self, attrib, d_plus_value, filterAttribs, tabname, query):
         min_val_domain, max_val_domain = get_min_and_max_val('numeric')
