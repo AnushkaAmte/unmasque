@@ -6,7 +6,8 @@ from ..refactored.util.common_queries import get_row_count, alter_table_rename_t
     drop_view, drop_table, create_table_as_select_star_from, get_ctid_from, get_tabname_4, \
     create_view_as_select_star_where_ctid, create_table_as_select_star_from_ctid, get_tabname_6, get_star, \
     get_restore_name,get_freq,delete_non_matching_rows,create_table_like,delete_non_matching_rows_str,get_max_val,\
-    drop_column,compute_join,truncate_table,get_col_idx,insert_row,get_type,insert_col,flood_fill,sort_insert,update_n_rows
+    drop_column,compute_join,truncate_table,get_col_idx,insert_row,get_type,insert_col,flood_fill,sort_insert,update_n_rows,\
+    increment_row,decrement_row
 from .util.utils import isQ_result_empty, get_val_plus_delta, get_cast_value, \
     get_min_and_max_val, get_format, get_mid_val, is_left_less_than_right_by_cutoff
 from .abstract.where_clause import WhereClause
@@ -159,13 +160,12 @@ class ModifiedFilter(WhereClause):
             attrib_list = self.global_all_attribs[i]
             total_attribs = total_attribs + len(attrib_list)
             for attrib in attrib_list:
-                if attrib not in self.global_key_attributes: 
+                if attrib not in self.global_key_attributes: #non key
                     self.extract_filter_on_attrib1(attrib, attrib_max_length, d_plus_value, filter_attribs,
                                                   query, tabname)
         for i in range(len(self.core_relations)):
             tabname = self.core_relations[i]
             size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
-            print(f"size bef loop: {size}")
             attrib_list = self.global_all_attribs[i]
             total_attribs = total_attribs + len(attrib_list)
             for attrib in attrib_list:
@@ -210,29 +210,50 @@ class ModifiedFilter(WhereClause):
             return False
         return True
     
+    def get_agg(self,query,i,tabname,attrib,size):
+        if i == 1:
+            #filter predicate may be sum(), avg() or min()
+
+            #check result before applying (+-)1, if we get same result as before(before i_min) then min(A) ruled out
+            #and if we get different result then min(A) is the aggregate
+
+            res1 = self.app.doJob(query)
+            self.connectionHelper.execute_sql([increment_row(tabname,attrib,1),decrement_row(tabname,attrib,2)])
+            res2 = self.app.doJob(query)
+            if res1 != res2:
+                #min(A) on attrib
+                
+            else:
+                #avg or sum()
+
     def check_lower_bound(self,query,attrib,tabname,min_val):
         try:
             size1 = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
             print(f"size bef: {size1}")
-            self.connectionHelper.execute_sql(["SAVEPOINT fl;","BEGIN;",insert_col(tabname,'checking','INT'),flood_fill(tabname,'checking')])
+            self.connectionHelper.execute_sql(["SAVEPOINT f1;","BEGIN;",insert_col(tabname,'checking','INT'),flood_fill(tabname,'checking')])
             size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
             print(f"size: {size}")
             flag=0
             for i in range(1,size+1):
                 print(f"iter: {i}")
-                self.connectionHelper.execute_sql([update_n_rows(tabname,attrib,i,min_val)])
+                #add checkpoint here
+                self.connectionHelper.execute_sql(["SAVEPOINT f2","BEGIN",update_n_rows(tabname,attrib,i,min_val)])
                 res = self.app.doJob(query)
                 if isQ_result_empty(res):
                     flag = 1
                     print(f"Lower bound exists on {attrib}")
+                    self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
+                    #function call to get lower bound
+                    self.get_agg(query,i,tabname,attrib,size)
+
                     break
             if flag ==0:
                 print(f"No lower bound on {attrib}")
-            self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT fl;"])
+            self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f1;"])
         except Exception as error:
             print("Error occured while getting lower bound" + error)
-            self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT fl;"])
-            
+            self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f1;"])
+    
 
     def having_int(self,query,attrib,tabname):
         size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
