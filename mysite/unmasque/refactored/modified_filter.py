@@ -154,10 +154,14 @@ class ModifiedFilter(WhereClause):
         
         for i in range(len(self.core_relations)):
             tabname = self.core_relations[i]
+            size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
+            print(f"size bef loop: {size}")
             attrib_list = self.global_all_attribs[i]
             total_attribs = total_attribs + len(attrib_list)
             for attrib in attrib_list:
-                if attrib not in self.global_key_attributes:  # filter is allowed only on non-key attribs
+                if attrib not in self.global_key_attributes: 
+                    self.extract_filter_on_attrib1(attrib, attrib_max_length, d_plus_value, filter_attribs,
+                                                  query, tabname) # filter is allowed only on non-key attribs
                     self.extract_filter_on_attrib(attrib, attrib_max_length, d_plus_value, filter_attribs,
                                                   query, tabname)
                         
@@ -166,14 +170,19 @@ class ModifiedFilter(WhereClause):
                 # print("filter_attribs", filter_attribs)
         return filter_attribs
 
-    def extract_filter_on_attrib(self, attrib, attrib_max_length, d_plus_value, filter_attribs, query, tabname):
+    def extract_filter_on_attrib1(self, attrib, attrib_max_length, d_plus_value, filter_attribs, query, tabname):
 
+        if 'int' in self.global_attrib_types_dict[(tabname, attrib)]:
+            if attrib not in self.group_by_attrib:
+                self.having_int(query,attrib,tabname)    
+
+        
+
+
+    def extract_filter_on_attrib(self, attrib, attrib_max_length, d_plus_value, filter_attribs, query, tabname):
         if 'int' in self.global_attrib_types_dict[(tabname, attrib)]:
             if attrib in self.group_by_attrib:
                 self.handle_date_or_int_filter('int', attrib, d_plus_value, filter_attribs, tabname, query)
-            else:
-                print(f"Tabname is {tabname}")
-                self.having_int(query,attrib,tabname)    
 
         elif 'date' in self.global_attrib_types_dict[(tabname, attrib)]:
             self.handle_date_or_int_filter('date', attrib, d_plus_value, filter_attribs, tabname, query)
@@ -195,27 +204,35 @@ class ModifiedFilter(WhereClause):
     
     def check_lower_bound(self,query,attrib,tabname,min_val):
         try:
+            size1 = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
+            print(f"size bef: {size1}")
             self.connectionHelper.execute_sql(["SAVEPOINT fl;","BEGIN;",insert_col(tabname,'checking','INT'),flood_fill(tabname,'checking')])
             size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
+            print(f"size: {size}")
+            flag=0
             for i in range(1,size+1):
+                print(f"iter: {i}")
                 self.connectionHelper.execute_sql([update_n_rows(tabname,attrib,i,min_val)])
                 res = self.app.doJob(query)
                 if isQ_result_empty(res):
                     flag = 1
                     print(f"Lower bound exists on {attrib}")
                     break
-            if flag != 1:
+            if flag ==0:
                 print(f"No lower bound on {attrib}")
             self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT fl;"])
         except Exception as error:
-            print("Error occured while getting lower bound")
-            self.connectionHelper.execute_sql(["ROLLBACK;"])
+            print("Error occured while getting lower bound" + error)
+            self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT fl;"])
             
 
     def having_int(self,query,attrib,tabname):
+        size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
+        print(f"size: {size}")
         self.connectionHelper.execute_sql(["Begin;",create_table_as_select_star_from('new_table',tabname),
                                            truncate_table(tabname),sort_insert(tabname,attrib),
                                            drop_table('new_table')])
+       
         min_val_domain, max_val_domain = get_min_and_max_val('int')
         self.check_lower_bound(query,attrib,tabname,min_val_domain)
 
