@@ -161,7 +161,15 @@ class ModifiedFilter(WhereClause):
             for attrib in attrib_list:
                 if attrib not in self.global_key_attributes: 
                     self.extract_filter_on_attrib1(attrib, attrib_max_length, d_plus_value, filter_attribs,
-                                                  query, tabname) # filter is allowed only on non-key attribs
+                                                  query, tabname)
+        for i in range(len(self.core_relations)):
+            tabname = self.core_relations[i]
+            size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
+            print(f"size bef loop: {size}")
+            attrib_list = self.global_all_attribs[i]
+            total_attribs = total_attribs + len(attrib_list)
+            for attrib in attrib_list:
+                if attrib not in self.global_key_attributes:  # filter is allowed only on non-key attribs
                     self.extract_filter_on_attrib(attrib, attrib_max_length, d_plus_value, filter_attribs,
                                                   query, tabname)
                         
