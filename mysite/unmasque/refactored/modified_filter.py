@@ -36,6 +36,8 @@ class ModifiedFilter(WhereClause):
         query = self.extract_params_from_args(args)
         self.do_init()
         self.preprocess(query)
+        self.connectionHelper.execute_sql(["insert into customer values('2', 'Customer#000000781', 'FQCAkyfV0 kL3,FNA1OlBjABak', '18', '28-478-388-5881','6403.62', 'MACHINERY ', 'ake blithely blithely final foxes. blithely silent pinto beans haggle furiously. fluffily bold acco');",
+                                           "insert into orders values(16451, 2, 'F','142886.72', '1994-7-23', '4-NOT SPECIFIED', 'Clerk#000000831', '0', 'y bold foxes. unusual packages ca');"])
         self.filter_predicates = self.get_filter_predicates(query)
         return self.filter_predicates
 
@@ -99,9 +101,9 @@ class ModifiedFilter(WhereClause):
             for tabname,attrib in zip(ref_tup,attr_tup):
                 col_idx.append(self.connectionHelper.execute_sql_fetchone_0(get_col_idx(get_tabname_6(tabname),attrib)))
             index.append(col_idx)
-        print(f"Join Result is {join_result}")
-        print(f"size list:{size_list}")
-        print(f"indexes :{index}")
+        #print(f"Join Result is {join_result}")
+        #print(f"size list:{size_list}")
+        #print(f"indexes :{index}")
 
         for i in range(len(join_result)):
            
@@ -113,8 +115,8 @@ class ModifiedFilter(WhereClause):
                 temp_tab2= res[size[0]:] 
                 t_t1 = list(temp_tab1)
                 t_t2 = list(temp_tab2)
-                print(f"{t_t1} size={len(t_t1)}")
-                print(f"{t_t2} size={len(t_t2)}")
+                #print(f"{t_t1} size={len(t_t1)}")
+                #print(f"{t_t2} size={len(t_t2)}")
                 for j, item in enumerate(t_t1):
                     if isinstance(item, datetime.date):
                         t_t1[j] = str(item)
@@ -125,10 +127,10 @@ class ModifiedFilter(WhereClause):
                         t_t2[k] = str(item)
                     if isinstance(item, Decimal):
                         t_t2[k] = float(item)
-                print(f"{t_t1} size={len(t_t1)}")
-                print(f"{t_t2} size={len(t_t2)}")
+                #print(f"{t_t1} size={len(t_t1)}")
+                #print(f"{t_t2} size={len(t_t2)}")
                
-                print(f"ref tab: {referenced_tables[i]}")
+                #print(f"ref tab: {referenced_tables[i]}")
                 self.connectionHelper.execute_sql(
                         ["BEGIN;",insert_row(referenced_tables[i][0],tuple(t_t1)),insert_row(referenced_tables[i][1],tuple(t_t2))])
         
@@ -136,7 +138,7 @@ class ModifiedFilter(WhereClause):
             for key_atrrib,original_table in zip(attr_tup,ref_tup):
                
                 datatype = self.connectionHelper.execute_sql_fetchall(get_type(get_tabname_6(original_table),key_atrrib))
-                print(f"att: {key_atrrib} type: {datatype[0][0][0]}")
+                #print(f"att: {key_atrrib} type: {datatype[0][0][0]}")
                 self.connectionHelper.execute_sql([flood_fill(original_table,key_atrrib)])
                 ans = self.connectionHelper.execute_sql_fetchall(f"select * from {original_table}")
                 print(f"attr : {key_atrrib} tab: {original_table}")
@@ -227,7 +229,7 @@ class ModifiedFilter(WhereClause):
                     mid_val, new_result = self.run_app_with_mid_val('int', high, low, query, query_front, query_back)
                     if mid_val == low or mid_val == high:
                         # self.revert_filter_changes(tabname)
-                        self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
+                        self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f4;"])
                         break
                     if isQ_result_empty(new_result):
                         new_val = get_val_plus_delta('int', mid_val, -1 * delta)
@@ -235,7 +237,7 @@ class ModifiedFilter(WhereClause):
                     else:
                         low = mid_val
                     # self.revert_filter_changes(tabname)
-                    self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
+                    self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f4;"])
             return low
         else:
             while is_left_less_than_right_by_cutoff('int', low, high, while_cut_off):
@@ -400,7 +402,7 @@ class ModifiedFilter(WhereClause):
                     having_attribs.append([tabname,attrib,'sum','>=',vl,min_val])
         elif i == size:
             res1 = self.app.doJob(query)
-            self.connectionHelper.execute_sql([increment_row(tabname,attrib,i),decrement_row(tabname,attrib,1)])
+            self.connectionHelper.execute_sql([increment_row(tabname,attrib,1),decrement_row(tabname,attrib,i)])
             res2 = self.app.doJob(query)
             if res1 != res2:
                 #min(A) on attrib
@@ -467,24 +469,25 @@ class ModifiedFilter(WhereClause):
             size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
             print(f"size: {size}")
             flag=0
+            self.connectionHelper.execute_sql(["SAVEPOINT f4;","BEGIN;"])
             for i in range(1,size+1):
                 print(f"iter: {i}")
                 #add checkpoint here
-                self.connectionHelper.execute_sql(["SAVEPOINT f4","BEGIN",update_n_rows(tabname,attrib,i,max_val)])
+                self.connectionHelper.execute_sql([update_n_rows(tabname,attrib,i,max_val)])
                 res = self.app.doJob(query)
                 if isQ_result_empty(res):
                     flag = 1
-                    print(f"Lower bound exists on {attrib}")
+                    print(f"upper bound exists on {attrib}")
                     self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f4;"])
-                    #function call to get lower bound
-                    self.get_agg_lower(query,i,tabname,attrib,size,max_val,having_attribs)
+                    #function call to get upper bound
+                    self.get_agg_upper(query,i,tabname,attrib,size,max_val,having_attribs)
 
                     break
             if flag ==0:
-                print(f"No lower bound on {attrib}")
+                print(f"No upper bound on {attrib}")
             self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f3;"])
         except Exception as error:
-            print("Error occured while getting lower bound" + error)
+            print("Error occured while getting upper bound" + error)
             self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f3;"])
 
     def check_lower_bound(self,query,attrib,tabname,min_val,having_attribs):
@@ -495,22 +498,28 @@ class ModifiedFilter(WhereClause):
             size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
             print(f"size: {size}")
             flag=0
+            self.connectionHelper.execute_sql(["SAVEPOINT f2;","BEGIN;"])
             for i in range(1,size+1):
-                print(f"iter: {i}")
                 #add checkpoint here
-                self.connectionHelper.execute_sql(["SAVEPOINT f2","BEGIN",update_n_rows(tabname,attrib,i,min_val)])
+                self.connectionHelper.execute_sql([update_n_rows(tabname,attrib,i,min_val)])
+               
                 res = self.app.doJob(query)
+                print(f"res in low: {res}")
                 if isQ_result_empty(res):
+                    print(f"iter: {i}")
                     flag = 1
                     print(f"Lower bound exists on {attrib}")
-                    self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
                     #function call to get lower bound
+                    self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
+                    
                     self.get_agg_lower(query,i,tabname,attrib,size,min_val,having_attribs)
 
                     break
             if flag ==0:
                 print(f"No lower bound on {attrib}")
             self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f1;"])
+            t = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname}")
+            print(f"t: {t[0]} tabname:{tabname}")
         except Exception as error:
             print("Error occured while getting lower bound" + error)
             self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f1;"])
