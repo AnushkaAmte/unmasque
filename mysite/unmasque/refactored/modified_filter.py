@@ -157,16 +157,16 @@ class ModifiedFilter(WhereClause):
             # aoa change
             self.global_attrib_types_dict[(entry[0], entry[1])] = entry[2]
         
-        # for i in range(len(self.core_relations)):
-        #     tabname = self.core_relations[i]
-        #     size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
-        #     print(f"size bef loop: {size}")
-        #     attrib_list = self.global_all_attribs[i]
-        #     total_attribs = total_attribs + len(attrib_list)
-        #     for attrib in attrib_list:
-        #         if attrib not in self.global_key_attributes: #non key
-        #             self.extract_filter_on_attrib1(attrib, attrib_max_length, d_plus_value, having_attribs,
-        #                                           query, tabname)
+        for i in range(len(self.core_relations)):
+             tabname = self.core_relations[i]
+             size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
+             print(f"size bef loop: {size}")
+             attrib_list = self.global_all_attribs[i]
+             total_attribs = total_attribs + len(attrib_list)
+             for attrib in attrib_list:
+                 if attrib not in self.global_key_attributes: #non key
+                     self.extract_filter_on_attrib1(attrib, attrib_max_length, d_plus_value, having_attribs,
+                                                   query, tabname)
         
         for i in range(len(self.core_relations)):
             tabname = self.core_relations[i]
@@ -178,7 +178,7 @@ class ModifiedFilter(WhereClause):
                     self.extract_filter_on_attrib(attrib, attrib_max_length, d_plus_value, filter_attribs,
                                                   query, tabname)
                         
-                
+        print(f"having: {having_attribs}")    
 
                 # print("filter_attribs", filter_attribs)
         return filter_attribs
@@ -194,8 +194,8 @@ class ModifiedFilter(WhereClause):
 
     def extract_filter_on_attrib(self, attrib, attrib_max_length, d_plus_value, filter_attribs, query, tabname):
         if 'int' in self.global_attrib_types_dict[(tabname, attrib)]:
-            # if attrib in self.group_by_attrib:
-            self.handle_date_or_int_filter('int', attrib, d_plus_value, filter_attribs, tabname, query)
+            if attrib in self.group_by_attrib:
+                self.handle_date_or_int_filter('int', attrib, d_plus_value, filter_attribs, tabname, query)
 
         elif 'date' in self.global_attrib_types_dict[(tabname, attrib)]:
             self.handle_date_or_int_filter('date', attrib, d_plus_value, filter_attribs, tabname, query)
@@ -271,7 +271,7 @@ class ModifiedFilter(WhereClause):
                 a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = 1;")
                 a1 -= 1
                 vl = self.binary_search(a1,max_val,tabname,attrib,query,1)
-                having_attribs.append(tabname,attrib,'min','<=',max_val,vl)
+                having_attribs.append([tabname,attrib,'min','<=',max_val,vl])
             else:
                 #avg or sum()
                 #insert a new row into tabname such that attrib has value 0
@@ -292,9 +292,9 @@ class ModifiedFilter(WhereClause):
                         self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
                 res_aft = self.app.doJob(query)
                 if res_bef != res_aft:
-                    having_attribs.append(tabname,attrib,'avg','<=',max_val,vl)
+                    having_attribs.append([tabname,attrib,'avg','<=',max_val,vl])
                 else:
-                    having_attribs.append(tabname,attrib,'sum','<=',max_val,vl)
+                    having_attribs.append([tabname,attrib,'sum','<=',max_val,vl])
         elif i == size:
             res1 = self.app.doJob(query)
             self.connectionHelper.execute_sql([increment_row(tabname,attrib,i),decrement_row(tabname,attrib,1)])
@@ -307,7 +307,7 @@ class ModifiedFilter(WhereClause):
                 a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
                 a1 += 1
                 vl = self.binary_search(a1,max_val,tabname,attrib,query,1)
-                having_attribs.append(tabname,attrib,'max','<=',max_val,vl)
+                having_attribs.append([tabname,attrib,'max','<=',max_val,vl])
             else:
                 #avg or sum()
                 #insert a new row into tabname such that attrib has value 0
@@ -328,13 +328,13 @@ class ModifiedFilter(WhereClause):
                         self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
                 res_aft = self.app.doJob(query)
                 if res_bef != res_aft:
-                    having_attribs.append(tabname,attrib,'avg','<=',max_val,vl)
+                    having_attribs.append([tabname,attrib,'avg','<=',max_val,vl])
                 else:
-                    having_attribs.append(tabname,attrib,'sum','<=',max_val,vl)
+                    having_attribs.append([tabname,attrib,'sum','<=',max_val,vl])
         else:
             #aggregate may be sum() or avg()
-            vl = self.binary_search(a1,max_val,tabname,attrib,query,1)
             a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
+            vl = self.binary_search(a1,max_val,tabname,attrib,query,1)
             temp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname} where checking = 1;")
             col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tabname,attrib))
             row1 = list(temp)
@@ -352,9 +352,9 @@ class ModifiedFilter(WhereClause):
                     self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
             res_aft = self.app.doJob(query)
             if res_bef != res_aft:
-                having_attribs.append(tabname,attrib,'avg','<=',max_val,vl)
+                having_attribs.append([tabname,attrib,'avg','<=',max_val,vl])
             else:
-                having_attribs.append(tabname,attrib,'sum','<=',max_val,vl)
+                having_attribs.append([tabname,attrib,'sum','<=',max_val,vl])
 
     def get_agg_lower(self,query,i,tabname,attrib,size,min_val,having_attribs):
         if i == 1:
@@ -374,7 +374,7 @@ class ModifiedFilter(WhereClause):
                 a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = 1;")
                 a1 -= 1
                 vl = self.binary_search(min_val,a1,tabname,attrib,query,0)
-                having_attribs.append(tabname,attrib,'min','>=',vl,min_val)
+                having_attribs.append([tabname,attrib,'min','>=',vl,min_val])
             else:
                 #avg or sum()
                 #insert a new row into tabname such that attrib has value 0
@@ -395,9 +395,9 @@ class ModifiedFilter(WhereClause):
                         self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
                 res_aft = self.app.doJob(query)
                 if res_bef != res_aft:
-                    having_attribs.append(tabname,attrib,'avg','>=',vl,min_val)
+                    having_attribs.append([tabname,attrib,'avg','>=',vl,min_val])
                 else:
-                    having_attribs.append(tabname,attrib,'sum','>=',vl,min_val)
+                    having_attribs.append([tabname,attrib,'sum','>=',vl,min_val])
         elif i == size:
             res1 = self.app.doJob(query)
             self.connectionHelper.execute_sql([increment_row(tabname,attrib,i),decrement_row(tabname,attrib,1)])
@@ -410,7 +410,7 @@ class ModifiedFilter(WhereClause):
                 a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
                 a1 += 1
                 vl = self.binary_search(min_val,a1,tabname,attrib,query,0)
-                having_attribs.append(tabname,attrib,'max','>=',vl,min_val)
+                having_attribs.append([tabname,attrib,'max','>=',vl,min_val])
             else:
                 #avg or sum()
                 #insert a new row into tabname such that attrib has value 0
@@ -431,13 +431,13 @@ class ModifiedFilter(WhereClause):
                         self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
                 res_aft = self.app.doJob(query)
                 if res_bef != res_aft:
-                    having_attribs.append(tabname,attrib,'avg','>=',vl,min_val)
+                    having_attribs.append([tabname,attrib,'avg','>=',vl,min_val])
                 else:
-                    having_attribs.append(tabname,attrib,'sum','>=',vl,min_val)
+                    having_attribs.append([tabname,attrib,'sum','>=',vl,min_val])
         else:
             #aggregate may be sum() or avg()
-            vl = self.binary_search(min_val,a1,tabname,attrib,query,0)
             a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
+            vl = self.binary_search(min_val,a1,tabname,attrib,query,0)
             temp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname} where checking = 1;")
             col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tabname,attrib))
             row1 = list(temp)
@@ -455,9 +455,9 @@ class ModifiedFilter(WhereClause):
                     self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
             res_aft = self.app.doJob(query)
             if res_bef != res_aft:
-                having_attribs.append(tabname,attrib,'avg','>=',vl,min_val)
+                having_attribs.append([tabname,attrib,'avg','>=',vl,min_val])
             else:
-                having_attribs.append(tabname,attrib,'sum','>=',vl,min_val)
+                having_attribs.append([tabname,attrib,'sum','>=',vl,min_val])
 
     def check_upper_bound(self,query,attrib,tabname,max_val,having_attribs):
         try:
