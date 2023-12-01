@@ -7,7 +7,7 @@ from ..refactored.util.common_queries import get_row_count, alter_table_rename_t
     create_view_as_select_star_where_ctid, create_table_as_select_star_from_ctid, get_tabname_6, get_star, \
     get_restore_name,get_freq,delete_non_matching_rows,create_table_like,delete_non_matching_rows_str,get_max_val,\
     drop_column,compute_join,truncate_table,get_col_idx,insert_row,get_type,insert_col,flood_fill,sort_insert,update_n_rows,\
-    increment_row,decrement_row
+    increment_row,decrement_row,get_tabname_temp
 from .util.utils import isQ_result_empty, get_val_plus_delta, get_cast_value, \
     get_min_and_max_val, get_format, get_mid_val, is_left_less_than_right_by_cutoff
 from .abstract.where_clause import WhereClause
@@ -142,7 +142,8 @@ class ModifiedFilter(WhereClause):
                 print(f"attr : {key_atrrib} tab: {original_table}")
                 print(ans[0])
 
-        
+        for table in self.core_relations:
+            self.connectionHelper.execute_sql([create_table_as_select_star_from(get_tabname_temp(table),table)])
 
 
     def get_filter_predicates(self, query):
@@ -694,7 +695,7 @@ class ModifiedFilter(WhereClause):
 
     def revert_filter_changes(self, tabname):
         self.connectionHelper.execute_sql(["Truncate table " + tabname + ';',
-                                           "Insert into " + tabname + " Select * from " + tabname + "4;"])
+                                           "Insert into " + tabname + " Select * from " + tabname + "_temp;"])
 
     def checkStringPredicate(self, query, tabname, attrib):
         # updatequery

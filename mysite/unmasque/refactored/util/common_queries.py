@@ -66,6 +66,9 @@ def get_tabname_6(tab):
 def get_tabname_un(tab):
     return tab + "_un"
 
+def get_tabname_temp(tab):
+    return tab + "_temp"
+
 def insert_row(tabname,value_list):
     return f"insert into {tabname} values {value_list};"
 
