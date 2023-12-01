@@ -232,8 +232,8 @@ class ModifiedFilter(WhereClause):
                         self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f4;"])
                         break
                     if isQ_result_empty(new_result):
-                        new_val = get_val_plus_delta('int', mid_val, -1 * delta)
-                        high = new_val
+                        #new_val = get_val_plus_delta('int', mid_val, -1 * delta)
+                        high = mid_val
                     else:
                         low = mid_val
                     # self.revert_filter_changes(tabname)
@@ -247,8 +247,8 @@ class ModifiedFilter(WhereClause):
                     self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
                     break
                 if isQ_result_empty(new_result):
-                    new_val = get_val_plus_delta('int', mid_val, delta)
-                    low = new_val
+                    #new_val = get_val_plus_delta('int', mid_val, delta)
+                    low = mid_val
                 else:
                     high = mid_val
                 # self.revert_filter_changes(tabname)
@@ -552,7 +552,7 @@ class ModifiedFilter(WhereClause):
                 filterAttribs.append(
                     (tabname, attrib, '=', float(d_plus_value[attrib]), float(d_plus_value[attrib])))
             else:
-                val1 = self.get_filter_value(query, 'float', tabname, attrib, math.ceil(float(d_plus_value[attrib])),
+                val1 = self.get_filter_value(query, 'float', tabname, attrib, float(d_plus_value[attrib]),
                                              max_val_domain, '<=')
                 val2 = self.get_filter_value(query, 'float', tabname, attrib, min_val_domain,
                                              math.floor(float(d_plus_value[attrib])), '>=')
@@ -789,10 +789,12 @@ class ModifiedFilter(WhereClause):
 
 
 def get_constants_for(datatype):
-    if datatype == 'int' or datatype == 'date':
+    if datatype in ('int','date'):
         while_cut_off = 0
         delta = 1
-    elif datatype == 'float' or datatype == 'numeric':
-        while_cut_off = 0.00001
+    elif datatype in ('float','numeric'):
+        while_cut_off = 0.00
         delta = 0.01
+    else:
+        raise ValueError(f"Unsupported datatype: {datatype}")
     return delta, while_cut_off

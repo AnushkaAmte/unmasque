@@ -26,7 +26,7 @@ if __name__ == '__main__':
         "From customer, orders "\
         "where c_custkey = o_custkey and "\
         "o_orderdate < date '1995-03-15'  "\
-        "Group By o_orderdate having max(o_shippriority)=0 "\
+        "Group By o_orderdate having min(o_shippriority)=0 "\
         "Order by o_orderdate "\
         "Limit 10;"
 

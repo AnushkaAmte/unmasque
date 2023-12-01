@@ -120,12 +120,11 @@ def get_min_and_max_val(datatype):
         return constants.min_int_val, constants.max_int_val
 
 
-
 def is_left_less_than_right_by_cutoff(datatype, left, right, cutoff):
     if datatype == 'date':
-        yes = int((right - left).days) > cutoff
+        yes = int((right - left).days) >= cutoff
     else:
-        yes = int((right - left)) > cutoff
+        yes = int((right - left)) >= cutoff
     return yes
 
 
@@ -143,9 +142,10 @@ def get_mid_val(datatype, high, low):
     if datatype == 'date':
         mid_val = low + datetime.timedelta(days=int(math.ceil((high - low).days / 2)))
     elif datatype == 'int':
-        mid_val = int((high + low) / 2)
+        mid_val = low + int((high - low)/2)
     else:  # numeric
         mid_val = (high + low) / 2
+        mid_val = round(mid_val, 3)
     return mid_val
 
 
