@@ -28,6 +28,7 @@ class ModifiedFilter(WhereClause):
                          global_min_instance_dict,
                          group_by_attrib)
         self.filter_predicates = None
+        self.having_predicates = None
         self.global_key_attributes = global_key_attributes
         self.global_join_graph = global_join_graph
 
@@ -141,10 +142,12 @@ class ModifiedFilter(WhereClause):
                 print(f"attr : {key_atrrib} tab: {original_table}")
                 print(ans[0])
 
+        
 
 
     def get_filter_predicates(self, query):
         filter_attribs = []
+        having_attribs = []
         total_attribs = 0
         d_plus_value = copy.deepcopy(self.global_d_plus_value)
         attrib_max_length = copy.deepcopy(self.global_attrib_max_length)
@@ -153,16 +156,17 @@ class ModifiedFilter(WhereClause):
             # aoa change
             self.global_attrib_types_dict[(entry[0], entry[1])] = entry[2]
         
-        for i in range(len(self.core_relations)):
-            tabname = self.core_relations[i]
-            size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
-            print(f"size bef loop: {size}")
-            attrib_list = self.global_all_attribs[i]
-            total_attribs = total_attribs + len(attrib_list)
-            for attrib in attrib_list:
-                if attrib not in self.global_key_attributes: #non key
-                    self.extract_filter_on_attrib1(attrib, attrib_max_length, d_plus_value, filter_attribs,
-                                                  query, tabname)
+        # for i in range(len(self.core_relations)):
+        #     tabname = self.core_relations[i]
+        #     size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
+        #     print(f"size bef loop: {size}")
+        #     attrib_list = self.global_all_attribs[i]
+        #     total_attribs = total_attribs + len(attrib_list)
+        #     for attrib in attrib_list:
+        #         if attrib not in self.global_key_attributes: #non key
+        #             self.extract_filter_on_attrib1(attrib, attrib_max_length, d_plus_value, having_attribs,
+        #                                           query, tabname)
+        
         for i in range(len(self.core_relations)):
             tabname = self.core_relations[i]
             size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
@@ -178,19 +182,19 @@ class ModifiedFilter(WhereClause):
                 # print("filter_attribs", filter_attribs)
         return filter_attribs
 
-    def extract_filter_on_attrib1(self, attrib, attrib_max_length, d_plus_value, filter_attribs, query, tabname):
+    def extract_filter_on_attrib1(self, attrib, attrib_max_length, d_plus_value, having_attribs, query, tabname):
 
         if 'int' in self.global_attrib_types_dict[(tabname, attrib)]:
             if attrib not in self.group_by_attrib:
-                self.having_int(query,attrib,tabname)    
+                self.having_int(query,attrib,tabname,having_attribs)    
 
         
 
 
     def extract_filter_on_attrib(self, attrib, attrib_max_length, d_plus_value, filter_attribs, query, tabname):
         if 'int' in self.global_attrib_types_dict[(tabname, attrib)]:
-            if attrib in self.group_by_attrib:
-                self.handle_date_or_int_filter('int', attrib, d_plus_value, filter_attribs, tabname, query)
+            # if attrib in self.group_by_attrib:
+            self.handle_date_or_int_filter('int', attrib, d_plus_value, filter_attribs, tabname, query)
 
         elif 'date' in self.global_attrib_types_dict[(tabname, attrib)]:
             self.handle_date_or_int_filter('date', attrib, d_plus_value, filter_attribs, tabname, query)
@@ -210,7 +214,45 @@ class ModifiedFilter(WhereClause):
             return False
         return True
     
-    def get_agg(self,query,i,tabname,attrib,size):
+    def binary_search(self,lower_val,higher_val,tabname,attrib,query,flag):
+        #flag = 0 --> greater_than_equal
+        query_front = "update " + str(tabname) + " set " + str(attrib) + " = "
+        query_back = ";"
+        delta, while_cut_off = get_constants_for('int')
+        low = lower_val
+        high = higher_val
+        if flag == 1:
+            while is_left_less_than_right_by_cutoff('int', low, high, while_cut_off):
+                    mid_val, new_result = self.run_app_with_mid_val('int', high, low, query, query_front, query_back)
+                    if mid_val == low or mid_val == high:
+                        # self.revert_filter_changes(tabname)
+                        self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
+                        break
+                    if isQ_result_empty(new_result):
+                        new_val = get_val_plus_delta('int', mid_val, -1 * delta)
+                        high = new_val
+                    else:
+                        low = mid_val
+                    # self.revert_filter_changes(tabname)
+                    self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
+            return low
+        else:
+            while is_left_less_than_right_by_cutoff('int', low, high, while_cut_off):
+                mid_val, new_result = self.run_app_with_mid_val('int', high, low, query, query_front, query_back)
+                if mid_val == low or mid_val == high:
+                    # self.revert_filter_changes(tabname)
+                    self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
+                    break
+                if isQ_result_empty(new_result):
+                    new_val = get_val_plus_delta('int', mid_val, delta)
+                    low = new_val
+                else:
+                    high = mid_val
+                # self.revert_filter_changes(tabname)
+                self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
+            return high
+
+    def get_agg_upper(self,query,i,tabname,attrib,size,max_val,having_attribs):
         if i == 1:
             #filter predicate may be sum(), avg() or min()
 
@@ -222,11 +264,229 @@ class ModifiedFilter(WhereClause):
             res2 = self.app.doJob(query)
             if res1 != res2:
                 #min(A) on attrib
-                
+                #perform binary search between i_min and a1
+
+                #get a1
+                a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = 1;")
+                a1 -= 1
+                vl = self.binary_search(a1,max_val,tabname,attrib,query,1)
+                having_attribs.append(tabname,attrib,'min','<=',max_val,vl)
             else:
                 #avg or sum()
+                #insert a new row into tabname such that attrib has value 0
+                temp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname} where checking = 1;")
+                col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tabname,attrib))
+                row1 = list(temp)
+                row1[col_idx] = 0
+                for j, item in enumerate(row1):
+                    if isinstance(item, datetime.date):
+                        row1[j] = str(item)
+                    if isinstance(item, Decimal):
+                        row1[j] = float(item)
+                res_bef = self.app.doJob(query)
+                self.connectionHelper.execute_sql(insert_row(tabname,tuple(row1)))
+                col_list = self.connectionHelper.execute_sql_fetchall(f"select * from information_schema.columns WHERE table_name = '{tabname}';")
+                for attr in col_list:
+                    if attr in self.group_by_attrib:
+                        self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
+                res_aft = self.app.doJob(query)
+                if res_bef != res_aft:
+                    having_attribs.append(tabname,attrib,'avg','<=',max_val,vl)
+                else:
+                    having_attribs.append(tabname,attrib,'sum','<=',max_val,vl)
+        elif i == size:
+            res1 = self.app.doJob(query)
+            self.connectionHelper.execute_sql([increment_row(tabname,attrib,i),decrement_row(tabname,attrib,1)])
+            res2 = self.app.doJob(query)
+            if res1 != res2:
+                #min(A) on attrib
+                #perform binary search between i_min and a1
 
-    def check_lower_bound(self,query,attrib,tabname,min_val):
+                #get a1
+                a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
+                a1 += 1
+                vl = self.binary_search(a1,max_val,tabname,attrib,query,1)
+                having_attribs.append(tabname,attrib,'max','<=',max_val,vl)
+            else:
+                #avg or sum()
+                #insert a new row into tabname such that attrib has value 0
+                temp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname} where checking = 1;")
+                col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tabname,attrib))
+                row1 = list(temp)
+                row1[col_idx] = 0
+                for j, item in enumerate(row1):
+                    if isinstance(item, datetime.date):
+                        row1[j] = str(item)
+                    if isinstance(item, Decimal):
+                        row1[j] = float(item)
+                res_bef = self.app.doJob(query)
+                self.connectionHelper.execute_sql(insert_row(tabname,tuple(row1)))
+                col_list = self.connectionHelper.execute_sql_fetchall(f"select * from information_schema.columns WHERE table_name = '{tabname}';")
+                for attr in col_list:
+                    if attr in self.group_by_attrib:
+                        self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
+                res_aft = self.app.doJob(query)
+                if res_bef != res_aft:
+                    having_attribs.append(tabname,attrib,'avg','<=',max_val,vl)
+                else:
+                    having_attribs.append(tabname,attrib,'sum','<=',max_val,vl)
+        else:
+            #aggregate may be sum() or avg()
+            vl = self.binary_search(a1,max_val,tabname,attrib,query,1)
+            a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
+            temp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname} where checking = 1;")
+            col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tabname,attrib))
+            row1 = list(temp)
+            row1[col_idx] = 0
+            for j, item in enumerate(row1):
+                if isinstance(item, datetime.date):
+                    row1[j] = str(item)
+                if isinstance(item, Decimal):
+                    row1[j] = float(item)
+            res_bef = self.app.doJob(query)
+            self.connectionHelper.execute_sql(insert_row(tabname,tuple(row1)))
+            col_list = self.connectionHelper.execute_sql_fetchall(f"select * from information_schema.columns WHERE table_name = '{tabname}';")
+            for attr in col_list:
+                if attr in self.group_by_attrib:
+                    self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
+            res_aft = self.app.doJob(query)
+            if res_bef != res_aft:
+                having_attribs.append(tabname,attrib,'avg','<=',max_val,vl)
+            else:
+                having_attribs.append(tabname,attrib,'sum','<=',max_val,vl)
+
+    def get_agg_lower(self,query,i,tabname,attrib,size,min_val,having_attribs):
+        if i == 1:
+            #filter predicate may be sum(), avg() or min()
+
+            #check result before applying (+-)1, if we get same result as before(before i_min) then min(A) ruled out
+            #and if we get different result then min(A) is the aggregate
+
+            res1 = self.app.doJob(query)
+            self.connectionHelper.execute_sql([increment_row(tabname,attrib,1),decrement_row(tabname,attrib,2)])
+            res2 = self.app.doJob(query)
+            if res1 != res2:
+                #min(A) on attrib
+                #perform binary search between i_min and a1
+
+                #get a1
+                a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = 1;")
+                a1 -= 1
+                vl = self.binary_search(min_val,a1,tabname,attrib,query,0)
+                having_attribs.append(tabname,attrib,'min','>=',vl,min_val)
+            else:
+                #avg or sum()
+                #insert a new row into tabname such that attrib has value 0
+                temp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname} where checking = 1;")
+                col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tabname,attrib))
+                row1 = list(temp)
+                row1[col_idx] = 0
+                for j, item in enumerate(row1):
+                    if isinstance(item, datetime.date):
+                        row1[j] = str(item)
+                    if isinstance(item, Decimal):
+                        row1[j] = float(item)
+                res_bef = self.app.doJob(query)
+                self.connectionHelper.execute_sql(insert_row(tabname,tuple(row1)))
+                col_list = self.connectionHelper.execute_sql_fetchall(f"select * from information_schema.columns WHERE table_name = '{tabname}';")
+                for attr in col_list:
+                    if attr in self.group_by_attrib:
+                        self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
+                res_aft = self.app.doJob(query)
+                if res_bef != res_aft:
+                    having_attribs.append(tabname,attrib,'avg','>=',vl,min_val)
+                else:
+                    having_attribs.append(tabname,attrib,'sum','>=',vl,min_val)
+        elif i == size:
+            res1 = self.app.doJob(query)
+            self.connectionHelper.execute_sql([increment_row(tabname,attrib,i),decrement_row(tabname,attrib,1)])
+            res2 = self.app.doJob(query)
+            if res1 != res2:
+                #min(A) on attrib
+                #perform binary search between i_min and a1
+
+                #get a1
+                a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
+                a1 += 1
+                vl = self.binary_search(min_val,a1,tabname,attrib,query,0)
+                having_attribs.append(tabname,attrib,'max','>=',vl,min_val)
+            else:
+                #avg or sum()
+                #insert a new row into tabname such that attrib has value 0
+                temp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname} where checking = 1;")
+                col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tabname,attrib))
+                row1 = list(temp)
+                row1[col_idx] = 0
+                for j, item in enumerate(row1):
+                    if isinstance(item, datetime.date):
+                        row1[j] = str(item)
+                    if isinstance(item, Decimal):
+                        row1[j] = float(item)
+                res_bef = self.app.doJob(query)
+                self.connectionHelper.execute_sql(insert_row(tabname,tuple(row1)))
+                col_list = self.connectionHelper.execute_sql_fetchall(f"select * from information_schema.columns WHERE table_name = '{tabname}';")
+                for attr in col_list:
+                    if attr in self.group_by_attrib:
+                        self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
+                res_aft = self.app.doJob(query)
+                if res_bef != res_aft:
+                    having_attribs.append(tabname,attrib,'avg','>=',vl,min_val)
+                else:
+                    having_attribs.append(tabname,attrib,'sum','>=',vl,min_val)
+        else:
+            #aggregate may be sum() or avg()
+            vl = self.binary_search(min_val,a1,tabname,attrib,query,0)
+            a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
+            temp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname} where checking = 1;")
+            col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tabname,attrib))
+            row1 = list(temp)
+            row1[col_idx] = 0
+            for j, item in enumerate(row1):
+                if isinstance(item, datetime.date):
+                    row1[j] = str(item)
+                if isinstance(item, Decimal):
+                    row1[j] = float(item)
+            res_bef = self.app.doJob(query)
+            self.connectionHelper.execute_sql(insert_row(tabname,tuple(row1)))
+            col_list = self.connectionHelper.execute_sql_fetchall(f"select * from information_schema.columns WHERE table_name = '{tabname}';")
+            for attr in col_list:
+                if attr in self.group_by_attrib:
+                    self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
+            res_aft = self.app.doJob(query)
+            if res_bef != res_aft:
+                having_attribs.append(tabname,attrib,'avg','>=',vl,min_val)
+            else:
+                having_attribs.append(tabname,attrib,'sum','>=',vl,min_val)
+
+    def check_upper_bound(self,query,attrib,tabname,max_val,having_attribs):
+        try:
+            size1 = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
+            print(f"size bef: {size1}")
+            self.connectionHelper.execute_sql(["SAVEPOINT f3;","BEGIN;",insert_col(tabname,'checking','INT'),flood_fill(tabname,'checking')])
+            size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
+            print(f"size: {size}")
+            flag=0
+            for i in range(1,size+1):
+                print(f"iter: {i}")
+                #add checkpoint here
+                self.connectionHelper.execute_sql(["SAVEPOINT f4","BEGIN",update_n_rows(tabname,attrib,i,max_val)])
+                res = self.app.doJob(query)
+                if isQ_result_empty(res):
+                    flag = 1
+                    print(f"Lower bound exists on {attrib}")
+                    self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f4;"])
+                    #function call to get lower bound
+                    self.get_agg_lower(query,i,tabname,attrib,size,max_val,having_attribs)
+
+                    break
+            if flag ==0:
+                print(f"No lower bound on {attrib}")
+            self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f3;"])
+        except Exception as error:
+            print("Error occured while getting lower bound" + error)
+            self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f3;"])
+
+    def check_lower_bound(self,query,attrib,tabname,min_val,having_attribs):
         try:
             size1 = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
             print(f"size bef: {size1}")
@@ -244,7 +504,7 @@ class ModifiedFilter(WhereClause):
                     print(f"Lower bound exists on {attrib}")
                     self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
                     #function call to get lower bound
-                    self.get_agg(query,i,tabname,attrib,size)
+                    self.get_agg_lower(query,i,tabname,attrib,size,min_val,having_attribs)
 
                     break
             if flag ==0:
@@ -255,7 +515,7 @@ class ModifiedFilter(WhereClause):
             self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f1;"])
     
 
-    def having_int(self,query,attrib,tabname):
+    def having_int(self,query,attrib,tabname,having_attribs):
         size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
         print(f"size: {size}")
         self.connectionHelper.execute_sql(["Begin;",create_table_as_select_star_from('new_table',tabname),
@@ -263,7 +523,8 @@ class ModifiedFilter(WhereClause):
                                            drop_table('new_table')])
        
         min_val_domain, max_val_domain = get_min_and_max_val('int')
-        self.check_lower_bound(query,attrib,tabname,min_val_domain)
+        self.check_lower_bound(query,attrib,tabname,min_val_domain,having_attribs)
+        self.check_upper_bound(query,attrib,tabname,max_val_domain,having_attribs)
 
     def handle_numeric_filter(self, attrib, d_plus_value, filterAttribs, tabname, query):
         min_val_domain, max_val_domain = get_min_and_max_val('numeric')

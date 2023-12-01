@@ -91,6 +91,9 @@ def increment_row(tabname,attrib,i):
 def decrement_row(tabname,attrib,i):
     return f"update {tabname} set {attrib} = {attrib} - 1 where checking = {i};"
 
+def set_all_values(tabname,attrib):
+    return f"update {tabname} set {attrib} = "
+
 def compute_join(tables,tuple_with_attrib):
     print(f"tab: {tables}")
     print(f" attr: {tuple_with_attrib}")

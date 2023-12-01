@@ -18,9 +18,9 @@ if __name__ == '__main__':
          "Where c_mktsegment = 'BUILDING' and c_custkey = o_custkey and l_orderkey = o_orderkey and "\
          "o_orderdate < date '1995-03-15' and l_shipdate > date '1995-03-15' "\
          "Group By l_orderkey, o_orderdate, o_shippriority "\
-         "HAVING min (l_extendedprice) > 1000 "\
          "Order by revenue desc, o_orderdate "\
          "Limit 10;"\
+        #  "HAVING min (l_extendedprice) > 1000 "\
          
     eq, time = MutatedPipeline.extract(hq)
 

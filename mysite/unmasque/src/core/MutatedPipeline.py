@@ -95,12 +95,12 @@ def extract(query):
         print("Some error while group by extraction. Aborting extraction!")
         return None, time_profile
 
-    connectionHelper.execute_sql(["insert into orders values ('44613',  '1005' , 'F', '266979.42' ,'1995-03-14',  '1-URGENT' ,'Clerk#000000989' ,  '0' , 'ully even deposits. regular');",
-                                  "insert into orders values ('44614',  '1006' , 'F', '266979.42' ,'1995-03-15',  '1-URGENT' ,'Clerk#000000989' ,  '0' , 'ully even deposits. regular');",
-                                  "insert into customer values  ('1005',  'Customer#000001005',  'mBaNGEJoY2tgXD60V2DEO ajjoM3Zd,Jp','8',  '18-676-152-4849',1512.46,  'BUILDING', 'ainst the ideas nag fluffily according to' );",
-                                  "insert into customer values ('1006',  'Customer#000001006',  'mBaNGEJoY2tgXD60V2DEO ajjoM3Zd,Jp','8',  '18-676-152-4849',1512.46,  'BUILDING', 'ainst the ideas nag fluffily according to' );",
-                                  "insert into lineitem values ('44613','559' ,'20' , '1' ,'27' ,'39407.85' ,'0.03','0.03', 'A', 'F' ,'1995-03-16','1995-06-09','1995-05-17','COLLECT COD', 'SHIP','ar requests print furiously si');",
-                                  "insert into lineitem values ('44614','559' ,'20' , '1' ,'27' ,'39407.85' ,'0.03','0.03', 'A', 'F' ,'1995-03-17','1995-06-09','1995-05-17','COLLECT COD', 'SHIP','ar requests print furiously si');"])
+    # connectionHelper.execute_sql(["insert into orders values ('44613',  '1005' , 'F', '266979.42' ,'1995-03-14',  '1-URGENT' ,'Clerk#000000989' ,  '0' , 'ully even deposits. regular');",
+    #                               "insert into orders values ('44614',  '1006' , 'F', '266979.42' ,'1995-03-15',  '1-URGENT' ,'Clerk#000000989' ,  '0' , 'ully even deposits. regular');",
+    #                               "insert into customer values  ('1005',  'Customer#000001005',  'mBaNGEJoY2tgXD60V2DEO ajjoM3Zd,Jp','8',  '18-676-152-4849',1512.46,  'BUILDING', 'ainst the ideas nag fluffily according to' );",
+    #                               "insert into customer values ('1006',  'Customer#000001006',  'mBaNGEJoY2tgXD60V2DEO ajjoM3Zd,Jp','8',  '18-676-152-4849',1512.46,  'BUILDING', 'ainst the ideas nag fluffily according to' );",
+    #                               "insert into lineitem values ('44613','559' ,'20' , '1' ,'27' ,'39407.85' ,'0.03','0.03', 'A', 'F' ,'1995-03-16','1995-06-09','1995-05-17','COLLECT COD', 'SHIP','ar requests print furiously si');",
+    #                               "insert into lineitem values ('44614','559' ,'20' , '1' ,'27' ,'39407.85' ,'0.03','0.03', 'A', 'F' ,'1995-03-17','1995-06-09','1995-05-17','COLLECT COD', 'SHIP','ar requests print furiously si');"])
     
     #size = connectionHelper.execute_sql_fetchone_0(get_row_count('lineitem'))
     #print(f'size : {size}')
