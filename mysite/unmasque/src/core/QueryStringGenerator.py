@@ -39,6 +39,24 @@ def handle_range_preds(datatype, pred, pred_op):
             pred[4])
     return pred_op
 
+def handle_range_preds_having(datatype, pred, pred_op):
+    min_val, max_val = get_min_and_max_val(datatype)
+    min_present = False
+    max_present = False
+    if pred[5] == min_val:  # no min val
+        min_present = True
+    if pred[3] == max_val:  # no max val
+        max_present = True
+    if min_present and not max_present:
+        pred_op += " <= " + get_format(datatype, pred[4])
+    elif not min_present and max_present:
+        pred_op += " >= " + get_format(datatype, pred[5])
+    elif not min_present and not max_present:
+        pred_op += " >= " + get_format(datatype, pred[3]) + " and " + pred[1] + " <= " + get_format(
+            datatype,
+            pred[4])
+    return pred_op
+
 
 class QueryStringGenerator(Base):
     max_str_len = 500
@@ -74,14 +92,14 @@ class QueryStringGenerator(Base):
         filters = []
         
         for pred in wc.filter_predicates:
-            tab_col = tuple(pred[:2])
-            pred_op = pred[1] + " "
+            tab_col = tuple(pred[:2]) #gets tabname and attrib
+            pred_op = pred[1] + " " #attrib
             datatype = get_datatype(wc.global_attrib_types, tab_col)
             if pred[2] != ">=" and pred[2] != "<=" and pred[2] != "range":
                 if pred[2] == "equal":
                     pred_op += " = "
                 else:
-                    pred_op += pred[2] + " "
+                    pred_op += pred[2] + " " #append sign
                 pred_op += get_format(datatype, pred[3])
             else:
                 pred_op = handle_range_preds(datatype, pred, pred_op)
@@ -94,8 +112,9 @@ class QueryStringGenerator(Base):
         having = []
         
         for pred in wc.having_predicates:
-            tab_col = tuple(pred[:3])
-            pred_op = pred[1] + " "
+            tab_col = tuple(pred[:2])
+            pred_op = pred[2] + "("
+            pred_op = pred[1] + ") "
             datatype = get_datatype(wc.global_attrib_types, tab_col)
             if pred[2] != ">=" and pred[2] != "<=" and pred[2] != "range":
                 if pred[2] == "equal":
