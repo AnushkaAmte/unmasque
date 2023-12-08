@@ -30,8 +30,14 @@ if __name__ == '__main__':
     #    "Order by o_orderdate "\
     #    "Limit 10;"
 
-    hq ="select student_sr_no,sum(credits) from course_info,student_info where sr_no = student_sr_no group by student_sr_no having sum(credits) >17 ;"
-         
+    hq ="select s_name,sum(credits) from course_info,student_info where sr_no = student_sr_no group by s_name having sum(credits) > 16;"
+
+    # filter of having and where clause are disjoint
+    # each attribute has atmost one aggregation
+    # joins of type pk-fk and fk-fk
+    # where clause has conjunction of filter and join predicate
+    # filter predicate feature non-key columns
+
     eq, time = MutatedPipeline.extract(hq)
 
     print("=========== Extracted Query =============")
