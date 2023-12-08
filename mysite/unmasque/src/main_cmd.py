@@ -13,12 +13,11 @@ if __name__ == '__main__':
     #      "< '1995-03-15' and l_shipdate > '1995-03-15' group by l_orderkey, o_orderdate, o_shippriority order by revenue " \
     #      "desc, o_orderdate, l_orderkey limit 10;"
 
-    """ hq = "Select l_orderkey, sum(l_extendedprice * (1 - l_discount)) as revenue, o_orderdate, o_shippriority "\
+    """ hq = "Select sum(l_extendedprice * (1 - l_discount)) as revenue, o_orderdate "\
          "From customer, orders, lineitem "\
          "Where c_mktsegment = 'BUILDING' and c_custkey = o_custkey and l_orderkey = o_orderkey and "\
          "o_orderdate < date '1995-03-15' and l_shipdate > date '1995-03-15' "\
-         "Group By l_orderkey, o_orderdate, o_shippriority "\
-         "HAVING min (l_extendedprice) > 1000 "\
+         "Group By o_orderdate "\
          "Order by revenue desc, o_orderdate "\
          "Limit 10;"\ """
     
@@ -30,7 +29,7 @@ if __name__ == '__main__':
     #    "Order by o_orderdate "\
     #    "Limit 10;"
 
-    hq ="select s_name,sum(credits) from course_info,student_info where sr_no = student_sr_no group by s_name having sum(credits) > 16;"
+    hq ="select s_name,sum(credits) from course_info,student_info where sr_no = student_sr_no group by s_name having min(credits)<5;"
 
     # filter of having and where clause are disjoint
     # each attribute has atmost one aggregation

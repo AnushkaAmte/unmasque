@@ -46,23 +46,24 @@ class Cs2(Base):
         return args[0]
 
     def doActualJob(self, args):
-        """ sizes = self.getSizes_cs()
-        self.take_backup()
-        query = self.extract_params_from_args(args)
+    #    sizes = self.getSizes_cs()
+    #    self.take_backup()
+    #    query = self.extract_params_from_args(args)
 
-        while self.iteration_count > 0:
-            done = self.correlated_sampling(query, sizes)
-            if not done:
-                print('sampling failed in iteraation', self.iteration_count)
-                self.seed_sample_size_per *= self.sample_per_multiplier
-                self.iteration_count -= 1
-            else:
-                self.passed = True
-                return True
+    #    while self.iteration_count > 0:
+    #        done = self.correlated_sampling(query, sizes)
+    #        if not done:
+    #            print('sampling failed in iteraation', self.iteration_count)
+    #            self.seed_sample_size_per *= self.sample_per_multiplier
+    #            self.iteration_count -= 1
+    #        else:
+    #            self.passed = True
+    #            return True
 
-        self.restore()
-        print("correlated sampling failed totally starting with halving based minimization") """
-        self.passed = True
+    #    self.restore()
+    #    print("correlated sampling failed totally starting with halving based minimization")
+    #    return False
+        self.passed= True
         return True
 
     def take_backup(self):

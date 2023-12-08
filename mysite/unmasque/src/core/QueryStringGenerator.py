@@ -45,17 +45,17 @@ def handle_range_preds_having(datatype, pred, pred_op):
     max_present = False
     if pred[5] == min_val:  # no min val
         min_present = True
-    if pred[3] == max_val:  # no max val
+    if pred[4] == max_val:  # no max val
         max_present = True
     if min_present and not max_present:
-        pred_op += " <= " + get_format(datatype, pred[4])
+        val += str(pred[4])
     elif not min_present and max_present:
-        pred_op += " >= " + get_format(datatype, pred[5])
-    elif not min_present and not max_present:
-        pred_op += " >= " + get_format(datatype, pred[3]) + " and " + pred[1] + " <= " + get_format(
-            datatype,
-            pred[4])
-    return pred_op
+        val += str(pred[5])
+    #elif not min_present and not max_present:
+    #    pred_op += " >= " + get_format(datatype, pred[3]) + " and " + pred[1] + " <= " + get_format(
+    #        datatype,
+    #        pred[4])
+    return val
 
 
 class QueryStringGenerator(Base):
@@ -102,7 +102,7 @@ class QueryStringGenerator(Base):
                     pred_op += pred[2] + " " #append sign
                 pred_op += get_format(datatype, pred[3])
             else:
-                pred_op = handle_range_preds(datatype, pred, pred_op)
+                pred_op = handle_range_preds_having(datatype, pred, pred_op)
 
             filters.append(pred_op)
         self.where_op += " and ".join(filters)
@@ -114,16 +114,16 @@ class QueryStringGenerator(Base):
         for pred in wc.having_predicates:
             tab_col = tuple(pred[:2])
             pred_op = pred[2] + "("
-            pred_op = pred[1] + ") "
+            pred_op += pred[1] + ") "
             datatype = get_datatype(wc.global_attrib_types, tab_col)
             if pred[2] != ">=" and pred[2] != "<=" and pred[2] != "range":
                 if pred[2] == "equal":
                     pred_op += " = "
-                else:
-                    pred_op += pred[2] + " "
+                #else:
+                #    pred_op += pred[2] + " "
                 pred_op += get_format(datatype, pred[3])
             else:
-                pred_op = handle_range_preds(datatype, pred, pred_op)
+                pred_op += handle_range_preds(datatype, pred, pred_op)
             print(pred_op)
             having.append(pred_op)
         self.having_op += " and ".join(having)
