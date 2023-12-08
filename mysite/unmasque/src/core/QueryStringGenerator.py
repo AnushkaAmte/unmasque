@@ -50,6 +50,7 @@ class QueryStringGenerator(Base):
         self.from_op = ''
         self.where_op = ''
         self.group_by_op = ''
+        self.having_op =''
         self.order_by_op = ''
         self.limit_op = None
 
@@ -60,15 +61,18 @@ class QueryStringGenerator(Base):
             joins.append(" = ".join(edge))
         self.where_op = " and ".join(joins)
 
-        if len(joins) > 0 and len(fl.filter_predicates) > 0:
+        if len(joins) > 0 or len(fl.filter_predicates) > 0:
             self.where_op += " and "
         self.where_op = self.add_filters(fl)
+        self.having_op = self.add_having(fl)
 
+     
         eq = self.refine_Query1(ej.global_key_attributes, pj, gb, agg, ob, lm)
         return eq
 
     def add_filters(self, wc):
         filters = []
+        
         for pred in wc.filter_predicates:
             tab_col = tuple(pred[:2])
             pred_op = pred[1] + " "
@@ -85,6 +89,27 @@ class QueryStringGenerator(Base):
             filters.append(pred_op)
         self.where_op += " and ".join(filters)
         return self.where_op
+    
+    def add_having(self,wc):
+        having = []
+        
+        for pred in wc.having_predicates:
+            tab_col = tuple(pred[:3])
+            pred_op = pred[1] + " "
+            datatype = get_datatype(wc.global_attrib_types, tab_col)
+            if pred[2] != ">=" and pred[2] != "<=" and pred[2] != "range":
+                if pred[2] == "equal":
+                    pred_op += " = "
+                else:
+                    pred_op += pred[2] + " "
+                pred_op += get_format(datatype, pred[3])
+            else:
+                pred_op = handle_range_preds(datatype, pred, pred_op)
+            print(pred_op)
+            having.append(pred_op)
+        self.having_op += " and ".join(having)
+        return self.having_op
+    
 
     def assembleQuery(self):
         output = "Select " + self.select_op \
@@ -93,6 +118,8 @@ class QueryStringGenerator(Base):
             output = output + "\n" + "Where " + self.where_op
         if self.group_by_op != '':
             output = output + "\n" + "Group By " + self.group_by_op
+        if self.having_op != '':
+            output = output + "\n" + "Having " + self.having_op
         if self.order_by_op != '':
             output = output + "\n" + "Order By " + self.order_by_op
         if self.limit_op is not None:

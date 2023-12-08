@@ -22,14 +22,15 @@ if __name__ == '__main__':
          "Order by revenue desc, o_orderdate "\
          "Limit 10;"\ """
     
-    hq ="Select  o_orderdate "\
-        "From customer, orders "\
-        "where c_custkey = o_custkey and "\
-        "o_orderdate < date '1995-03-15'  "\
-        "Group By o_orderdate having min(o_shippriority)=0 "\
-        "Order by o_orderdate "\
-        "Limit 10;"
+    #hq ="Select  o_orderdate "\
+    #    "From customer, orders "\
+    #    "where c_custkey = o_custkey and "\
+    #    "o_orderdate < date '1995-03-15'  "\
+    #    "Group By o_orderdate having min(o_shippriority)=0 "\
+    #    "Order by o_orderdate "\
+    #    "Limit 10;"
 
+    hq ="select student_sr_no,sum(credits) from course_info,student_info where sr_no = student_sr_no group by student_sr_no having sum(credits) >17 ;"
          
     eq, time = MutatedPipeline.extract(hq)
 

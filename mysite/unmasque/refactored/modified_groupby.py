@@ -111,8 +111,12 @@ class ModifiedGroupBy(GroupByBase):
     def insert_and_delete_extra_row(self,query,tabname,extra_row,attrib,temp_val,og_val):
         #res = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
         #print(f"Before Insert: {res}")
-        self.connectionHelper.execute_sql(
-                            ["BEGIN;",insert_row(tabname,tuple(extra_row))])
+        for row in extra_row:
+            self.connectionHelper.execute_sql(
+                            ["BEGIN;",insert_row(tabname,tuple(row))])
+        
+        #self.connectionHelper.execute_sql(
+        #                    ["BEGIN;",insert_row(tabname,tuple(extra_row))])
         #res1 = pd.read_sql_query(get_star(tabname), self.connectionHelper.conn)
         #print(f"After Insert: {res1}")
         if any(attrib in sublist for sublist in self.global_join_graph):
@@ -123,6 +127,7 @@ class ModifiedGroupBy(GroupByBase):
             self.has_groupby = True
             print(f"GB inter: {self.group_by_attrib}")
             print(f"New Res1: {new_result}")
+        
         self.connectionHelper.execute_sql(
                 [delete_row(tabname,temp_val,attrib)])
         for join_keys in self.global_join_graph:
@@ -135,33 +140,54 @@ class ModifiedGroupBy(GroupByBase):
         original_val = attrib_list[0]
         temp_val = int(attrib_list[0]+1)
         extra_row = copy.deepcopy(row1.values)
-        for i, item in enumerate(extra_row):
-            if isinstance(item, datetime.date):
-                extra_row[i] = str(item)
+        print(f"er: {extra_row}")
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
-        extra_row[col_idx]= temp_val
+        for row in extra_row:
+            row[col_idx] = temp_val
+            for i, item in enumerate(row):
+               if isinstance(item, datetime.date):
+                   row[i] = str(item)
+        #extra_row[col_idx]= temp_val
+        #for i, item in enumerate(extra_row):
+        #    if isinstance(item, datetime.date):
+        #        extra_row[i] = str(item)
+        print(f"er1: {extra_row}")
         return extra_row,temp_val,col_idx,original_val
     
     def int_decrement(self,row1,attrib_list,local_attrib_dict,attrib,tabname):
         og_val = attrib_list[0]
         temp_val = int(attrib_list[0]-1)
         extra_row = copy.deepcopy(row1.values)
-        for i, item in enumerate(extra_row):
-            if isinstance(item, datetime.date):
-                extra_row[i] = str(item)
+        print(f"er: {extra_row}")
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
-        extra_row[col_idx]= temp_val
+        for row in extra_row:
+            row[col_idx] = temp_val
+            for i, item in enumerate(row):
+               if isinstance(item, datetime.date):
+                   row[i] = str(item)
+        #extra_row[col_idx]= temp_val
+        #for i, item in enumerate(extra_row):
+        #    if isinstance(item, datetime.date):
+        #        extra_row[i] = str(item)
+        print(f"er1: {extra_row}")
         return extra_row,temp_val,col_idx,og_val
     
     def date_increment(self,row1,attrib_list,local_attrib_dict,attrib,tabname):
         og_val = attrib_list[0]
         temp_val = attrib_list[0]+datetime.timedelta(days=1)
         extra_row = copy.deepcopy(row1.values)
+        print(f"er: {extra_row}")
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
-        extra_row[col_idx]= temp_val
-        for i, item in enumerate(extra_row):
-            if isinstance(item, datetime.date):
-                extra_row[i] = str(item)
+        for row in extra_row:
+            row[col_idx] = temp_val
+            for i, item in enumerate(row):
+               if isinstance(item, datetime.date):
+                   row[i] = str(item)
+        #extra_row[col_idx]= temp_val
+        #for i, item in enumerate(extra_row):
+        #    if isinstance(item, datetime.date):
+        #        extra_row[i] = str(item)
+        print(f"er1: {extra_row}")
         return extra_row,temp_val,col_idx,og_val
     
 
@@ -169,19 +195,28 @@ class ModifiedGroupBy(GroupByBase):
         og_val = attrib_list[0]
         temp_val = attrib_list[0]-datetime.timedelta(days=1)
         extra_row = copy.deepcopy(row1.values)
+        print(f"er: {extra_row}")
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
-        extra_row[col_idx]= temp_val
-        for i, item in enumerate(extra_row):
-            if isinstance(item, datetime.date):
-                extra_row[i] = str(item)
+        for row in extra_row:
+            row[col_idx] = temp_val
+            for i, item in enumerate(row):
+               if isinstance(item, datetime.date):
+                   row[i] = str(item)
+        #extra_row[col_idx]= temp_val
+        #for i, item in enumerate(extra_row):
+        #    if isinstance(item, datetime.date):
+        #        extra_row[i] = str(item)
+        print(f"er1: {extra_row}")
         return extra_row,temp_val,col_idx,og_val
 
     def doExtractJob1(self,query):
         local_attrib_dict = self.generateDict(self.global_min_instance_dict)
         for tabname in local_attrib_dict:
-            row1 = copy.deepcopy(local_attrib_dict[tabname].iloc[0])
+            row1 = copy.deepcopy(local_attrib_dict[tabname])
+            print(f"ecp {local_attrib_dict[tabname].values}")
             for attrib,vals in local_attrib_dict[tabname].items():
                 attrib_list = (vals.values).tolist()
+                print(f"attr ist :{attrib_list}")
                 if(type(attrib_list[0])==int and self.checkWhetherAllSame(attrib_list)):
                     extra_row,temp_val,col_idx,og_val= self.int_increment(row1,attrib_list,local_attrib_dict,attrib,tabname)
                     try:
@@ -205,7 +240,7 @@ class ModifiedGroupBy(GroupByBase):
     def doExtractJob2(self,query):
         local_attrib_dict = self.generateDict(self.global_min_instance_dict)
         for tabname in local_attrib_dict:
-            row1 = copy.deepcopy(local_attrib_dict[tabname].iloc[0])
+            row1 = copy.deepcopy(local_attrib_dict[tabname])
             for attrib,vals in local_attrib_dict[tabname].items():
                 attrib_list = (vals.values).tolist()
                 if(type(attrib_list[0])==int and self.checkWhetherAllSame(attrib_list)):

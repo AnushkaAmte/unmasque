@@ -17,3 +17,5 @@ lineitem,l_suppkey,n,y,supplier,s_suppkey
 lineitem,l_partkey,n,y,partsupp,ps_partkey
 lineitem,l_suppkey,n,y,partsupp,ps_suppkey
 nation,n_regionkey,n,y,region,r_regionkey
+course_info,student_sr_no,n,y,student_info,sr_no
+student_info,sr_no,y,n,,
