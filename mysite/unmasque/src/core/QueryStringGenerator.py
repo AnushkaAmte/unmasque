@@ -43,14 +43,15 @@ def handle_range_preds_having(datatype, pred, pred_op):
     min_val, max_val = get_min_and_max_val(datatype)
     min_present = False
     max_present = False
+    val=0
     if pred[5] == min_val:  # no min val
         min_present = True
     if pred[4] == max_val:  # no max val
         max_present = True
     if min_present and not max_present:
-        val += str(pred[4])
+        val = str(pred[4])
     elif not min_present and max_present:
-        val += str(pred[5])
+        val = str(pred[5])
     #elif not min_present and not max_present:
     #    pred_op += " >= " + get_format(datatype, pred[3]) + " and " + pred[1] + " <= " + get_format(
     #        datatype,
@@ -72,6 +73,22 @@ class QueryStringGenerator(Base):
         self.order_by_op = ''
         self.limit_op = None
 
+
+    def separator(self,fl):
+        print(f"fl: {fl.having_predicates}")
+        for pred in fl.having_predicates:
+            if pred[2] == 'min' and pred[3] == '>=':
+                fl.filter_predicates.append([pred[0],pred[1],pred[3],pred[5],pred[4]])
+                fl.having_predicates.remove(pred)
+            elif pred[2] == 'max' and pred[3] == '<=':
+                fl.filter_predicates.append([pred[0],pred[1],pred[3],pred[5],pred[4]])
+                fl.having_predicates.remove(pred)
+        print(f"hav: {fl.having_predicates}")
+        print(f"fl : {fl.filter_predicates}")
+                
+
+
+
     def generate_query_string(self, fc, ej, fl, pj, gb, agg, ob, lm):
         self.from_op = ", ".join(fc.core_relations)
         joins = []
@@ -81,8 +98,10 @@ class QueryStringGenerator(Base):
 
         if len(joins) > 0 or len(fl.filter_predicates) > 0:
             self.where_op += " and "
+        if len(fl.having_predicates)>0:
+            self.separator(fl)
+            self.having_op = self.add_having(fl)
         self.where_op = self.add_filters(fl)
-        self.having_op = self.add_having(fl)
 
      
         eq = self.refine_Query1(ej.global_key_attributes, pj, gb, agg, ob, lm)
@@ -102,7 +121,7 @@ class QueryStringGenerator(Base):
                     pred_op += pred[2] + " " #append sign
                 pred_op += get_format(datatype, pred[3])
             else:
-                pred_op = handle_range_preds_having(datatype, pred, pred_op)
+                pred_op = handle_range_preds(datatype, pred, pred_op)
 
             filters.append(pred_op)
         self.where_op += " and ".join(filters)
@@ -116,14 +135,15 @@ class QueryStringGenerator(Base):
             pred_op = pred[2] + "("
             pred_op += pred[1] + ") "
             datatype = get_datatype(wc.global_attrib_types, tab_col)
-            if pred[2] != ">=" and pred[2] != "<=" and pred[2] != "range":
+            if pred[3] != ">=" and pred[3] != "<=" and pred[3] != "range":
                 if pred[2] == "equal":
                     pred_op += " = "
                 #else:
                 #    pred_op += pred[2] + " "
                 pred_op += get_format(datatype, pred[3])
             else:
-                pred_op += handle_range_preds(datatype, pred, pred_op)
+                pred_op += pred[3]
+                pred_op += " " +handle_range_preds_having(datatype, pred, pred_op)
             print(pred_op)
             having.append(pred_op)
         self.having_op += " and ".join(having)
