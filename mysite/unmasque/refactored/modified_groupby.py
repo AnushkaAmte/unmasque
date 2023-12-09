@@ -39,7 +39,6 @@ class ModifiedGroupBy(GroupByBase):
         temp = copy.deepcopy(global_min_instance_dict)
         # print(temp  )
         for index,val in temp.items():
-            print(index)
             cols =list(temp[index][0])
             #print(cols)
             del temp[index][0]
@@ -87,7 +86,6 @@ class ModifiedGroupBy(GroupByBase):
                     self.connectionHelper.execute_sql([insert_row(tables,tuple(new_row))])
 
     def cascade_delete(self,attrib,global_join_graph,temp_val,og_val):
-        print("in del")
         for join_keys in global_join_graph:
             if attrib in join_keys:
                 tuple_with_attrib = copy.deepcopy(join_keys)
@@ -125,8 +123,6 @@ class ModifiedGroupBy(GroupByBase):
         if(len(new_result)== 3):
             self.group_by_attrib.append(attrib)
             self.has_groupby = True
-            print(f"GB inter: {self.group_by_attrib}")
-            print(f"New Res1: {new_result}")
         
         self.connectionHelper.execute_sql(
                 [delete_row(tabname,temp_val,attrib)])
@@ -140,7 +136,6 @@ class ModifiedGroupBy(GroupByBase):
         original_val = attrib_list[0]
         temp_val = int(attrib_list[0]+1)
         extra_row = copy.deepcopy(row1.values)
-        print(f"er: {extra_row}")
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
         for row in extra_row:
             row[col_idx] = temp_val
@@ -151,14 +146,12 @@ class ModifiedGroupBy(GroupByBase):
         #for i, item in enumerate(extra_row):
         #    if isinstance(item, datetime.date):
         #        extra_row[i] = str(item)
-        print(f"er1: {extra_row}")
         return extra_row,temp_val,col_idx,original_val
     
     def int_decrement(self,row1,attrib_list,local_attrib_dict,attrib,tabname):
         og_val = attrib_list[0]
         temp_val = int(attrib_list[0]-1)
         extra_row = copy.deepcopy(row1.values)
-        print(f"er: {extra_row}")
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
         for row in extra_row:
             row[col_idx] = temp_val
@@ -169,14 +162,12 @@ class ModifiedGroupBy(GroupByBase):
         #for i, item in enumerate(extra_row):
         #    if isinstance(item, datetime.date):
         #        extra_row[i] = str(item)
-        print(f"er1: {extra_row}")
         return extra_row,temp_val,col_idx,og_val
     
     def date_increment(self,row1,attrib_list,local_attrib_dict,attrib,tabname):
         og_val = attrib_list[0]
         temp_val = attrib_list[0]+datetime.timedelta(days=1)
         extra_row = copy.deepcopy(row1.values)
-        print(f"er: {extra_row}")
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
         for row in extra_row:
             row[col_idx] = temp_val
@@ -187,7 +178,6 @@ class ModifiedGroupBy(GroupByBase):
         #for i, item in enumerate(extra_row):
         #    if isinstance(item, datetime.date):
         #        extra_row[i] = str(item)
-        print(f"er1: {extra_row}")
         return extra_row,temp_val,col_idx,og_val
     
 
@@ -195,7 +185,6 @@ class ModifiedGroupBy(GroupByBase):
         og_val = attrib_list[0]
         temp_val = attrib_list[0]-datetime.timedelta(days=1)
         extra_row = copy.deepcopy(row1.values)
-        print(f"er: {extra_row}")
         col_idx = local_attrib_dict[tabname].columns.get_loc(attrib)
         for row in extra_row:
             row[col_idx] = temp_val
@@ -206,17 +195,14 @@ class ModifiedGroupBy(GroupByBase):
         #for i, item in enumerate(extra_row):
         #    if isinstance(item, datetime.date):
         #        extra_row[i] = str(item)
-        print(f"er1: {extra_row}")
         return extra_row,temp_val,col_idx,og_val
 
     def doExtractJob1(self,query):
         local_attrib_dict = self.generateDict(self.global_min_instance_dict)
         for tabname in local_attrib_dict:
             row1 = copy.deepcopy(local_attrib_dict[tabname])
-            print(f"ecp {local_attrib_dict[tabname].values}")
             for attrib,vals in local_attrib_dict[tabname].items():
                 attrib_list = (vals.values).tolist()
-                print(f"attr ist :{attrib_list}")
                 if(type(attrib_list[0])==int and self.checkWhetherAllSame(attrib_list)):
                     extra_row,temp_val,col_idx,og_val= self.int_increment(row1,attrib_list,local_attrib_dict,attrib,tabname)
                     try:
@@ -253,9 +239,7 @@ class ModifiedGroupBy(GroupByBase):
                         exit(1)
                 elif(type(attrib_list[0])==date):
                     extra_row,temp_val,col_idx,og_val = self.date_decrement(row1,attrib_list,local_attrib_dict,attrib,tabname)
-                    print(f"date: {temp_val}type date1: {type(temp_val)}")
                     temp_val.strftime("%Y-%d-%m")
-                    print(f"date: {temp_val}type date1: {type(temp_val)}")
                     
                     try:
                         self.insert_and_delete_extra_row(query,tabname,extra_row,attrib,str(temp_val),og_val)

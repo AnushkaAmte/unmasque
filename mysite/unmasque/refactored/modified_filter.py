@@ -7,7 +7,7 @@ from ..refactored.util.common_queries import get_row_count, alter_table_rename_t
     create_view_as_select_star_where_ctid, create_table_as_select_star_from_ctid, get_tabname_6, get_star, \
     get_restore_name,get_freq,delete_non_matching_rows,create_table_like,delete_non_matching_rows_str,get_max_val,\
     drop_column,compute_join,truncate_table,get_col_idx,insert_row,get_type,insert_col,flood_fill,sort_insert,update_n_rows,\
-    increment_row,decrement_row,get_tabname_temp
+    increment_row,decrement_row,get_tabname_temp,update_n_rows_desc
 from .util.utils import isQ_result_empty, get_val_plus_delta, get_cast_value, \
     get_min_and_max_val, get_format, get_mid_val, is_left_less_than_right_by_cutoff
 from .abstract.where_clause import WhereClause
@@ -37,24 +37,21 @@ class ModifiedFilter(WhereClause):
         query = self.extract_params_from_args(args)
         self.do_init()
         temp1 = self.app.doJob(query)
-        print(f"Temp1 is {temp1}")
         if(len(self.global_join_graph) > 0):
             self.preprocess(query)
         for table in self.core_relations:
             self.connectionHelper.execute_sql([create_table_as_select_star_from(get_tabname_temp(table),table)])
         temp2 = self.app.doJob(query)
-        print(f"Temp2 is {temp2}")
         self.filter_predicates,self.having_predicates = self.get_filter_predicates(query)
         # self.avg_or_sum.append([tabname,attrib,'<=',max_val,sum_bound,avg_bound])
         # self.avg_or_sum.append([tabname,attrib,'>=',sum_bound,avg_bound,min_val])
         # filterAttribs.append((tabname, attrib, '<=', min_val_domain, val))
-        print(f"avg or sum: {self.avg_or_sum}")
-        self.having_predicates = self.identify_sum_and_avg(query)
-        print(f"Sum or avg having predicates is {self.having_predicates}")
+        self.having_predicates = self.identify_sum_and_avg(query,self.having_predicates)
+        print(f"Having predicate: {self.having_predicates}")
+        print(f"Filter predicates: {self.filter_predicates}")
         return self.filter_predicates,self.having_predicates
 
-    def identify_sum_and_avg(self,query):
-        having_attribs = []
+    def identify_sum_and_avg(self,query,having_attribs):
         for element in self.avg_or_sum:
             if element[2] == '<=':
                 tabname = element[0]
@@ -152,26 +149,20 @@ class ModifiedFilter(WhereClause):
                     
                 n = self.connectionHelper.execute_sql_fetchone_0(f"select max(checking) from {tabname};")
                 w= self.compute_width(tabname)
-                print(f"w:{w}")
                 width = w[0][0][0]
                 row1[width] =n+1
                 res_bef = self.app.doJob(query)
-                print(f"bef:{res_bef}")
                 tp1  = self.connectionHelper.execute_sql_fetchall(get_star(tabname))
-                print(f"tp1:{tp1}")
                 col_list1 = self.connectionHelper.execute_sql_fetchall(f"select column_name from information_schema.columns WHERE table_name = '{tabname}';")
                 col_list = [ele[0] for ele in col_list1[0]]
-                print(f"roq1:{row1}")
                 self.connectionHelper.execute_sql([insert_row(tabname,tuple(row1))])
                
                 for attr in col_list:
                     if attr in self.group_by_attrib:
                         self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1 limit 1);"])
                 tp2  = self.connectionHelper.execute_sql_fetchall(get_star(tabname))
-                print(f"tp2:{tp2}")
                 
                 res_aft = self.app.doJob(query)
-                print(f"res_aft:{res_aft}")
                 #this calc of res_bef and res_aft is wrong
                 if res_bef != res_aft:
                     having_attribs.append([tabname,attrib,'avg','>=',avg_bound,min_val])
@@ -248,7 +239,6 @@ class ModifiedFilter(WhereClause):
         count = 0
         index1 = 0
         for table_join in join_result:
-            print(f"table join{table_join}")
             for rows in table_join:
                 slicing = size_list[count]
                 slice_val = 0
@@ -256,7 +246,6 @@ class ModifiedFilter(WhereClause):
                 for values in slicing:
                     temp = list(rows[slice_val:slice_val + values])
                     slice_val += values
-                    print(temp)
                     for j, item in enumerate(temp):
                         if isinstance(item, datetime.date):
                             temp[j] = str(item)
@@ -275,8 +264,6 @@ class ModifiedFilter(WhereClause):
                 #print(f"att: {key_atrrib} type: {datatype[0][0][0]}")
                 self.connectionHelper.execute_sql([flood_fill(original_table,key_atrrib)])
                 ans = self.connectionHelper.execute_sql_fetchall(f"select * from {original_table}")
-                print(f"attr : {key_atrrib} tab: {original_table}")
-                print(ans[0])
 
     def get_filter_predicates(self, query):
         filter_attribs = []
@@ -292,7 +279,6 @@ class ModifiedFilter(WhereClause):
         for i in range(len(self.core_relations)):
              tabname = self.core_relations[i]
              size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
-             print(f"size bef loop: {size}")
              attrib_list = self.global_all_attribs[i]
              total_attribs = total_attribs + len(attrib_list)
              for attrib in attrib_list:
@@ -310,7 +296,6 @@ class ModifiedFilter(WhereClause):
                     self.extract_filter_on_attrib(attrib, attrib_max_length, d_plus_value, filter_attribs,
                                                   query, tabname)
                         
-        print(f"having: {having_attribs}")    
 
                 # print("filter_attribs", filter_attribs)
         return filter_attribs,having_attribs
@@ -340,7 +325,6 @@ class ModifiedFilter(WhereClause):
 
     def checkAttribValueEffect(self, query, tabname, attrib, val):
         self.connectionHelper.execute_sql(["update " + tabname + " set " + attrib + " = " + str(val) + ";"])
-        print("hello there")
         new_result = self.app.doJob(query)
         if isQ_result_empty(new_result):
             self.revert_filter_changes(tabname)
@@ -406,7 +390,6 @@ class ModifiedFilter(WhereClause):
                 vl = self.binary_search(a1,max_val,tabname,attrib,query,1,i)
                 having_attribs.append([tabname,attrib,'min','<=',max_val,vl])
             else:
-                print(f"I am in avg_or_sum")
                 self.avg_or_sum.append([tabname,attrib,'<=',max_val,sum_bound,avg_bound])
 
         elif i == size:
@@ -438,10 +421,8 @@ class ModifiedFilter(WhereClause):
             #and if we get different result then min(A) is the aggregate
 
             res1 = self.app.doJob(query)
-            print(f"Res1 is {res1}")
             self.connectionHelper.execute_sql(["SAVEPOINT rs1;",increment_row(tabname,attrib,1),decrement_row(tabname,attrib,2)])
             res2 = self.app.doJob(query)
-            print(f"Res 2 is {res2}")
             self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT rs1;"])
             if res1 != res2:
                 #min(A) on attrib
@@ -476,28 +457,22 @@ class ModifiedFilter(WhereClause):
             self.avg_or_sum.append([tabname,attrib,sum_bound,avg_bound,min_val])
 
     def get_avg_bound(self,query,tabname,attrib,i,actual_val,min_val,max_val,flag):
-        print(f"Actual val {actual_val}")
         # self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = '{actual_val}';"])
         if(flag == 0):
             new_val = self.binary_search(min_val,actual_val,tabname,attrib,query,flag,i)
         else:
             new_val = self.binary_search(actual_val,max_val,tabname,attrib,query,flag,i)
-        print(f"New val is {new_val}")
         self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = {new_val} where checking = {i};"])
         get_avg = self.connectionHelper.execute_sql_fetchone_0(f"select avg({attrib}) from {tabname};")
         return get_avg
 
     def get_sum_bound(self,query,tabname,attrib,i,actual_val,min_val,max_val,flag):
-        print(f"Actual val {actual_val}")
         # self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = '{actual_val}';"])
         if(flag == 0):
             new_val = self.binary_search(min_val,actual_val,tabname,attrib,query,flag,i)
         else:
             new_val = self.binary_search(actual_val,max_val,tabname,attrib,query,flag,i)
-        print(f"New val is {new_val}")
         self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = {new_val} where checking = {i};"])
-        tmp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname};")
-        print(f"tmp = {tmp}")
         get_sum = self.connectionHelper.execute_sql_fetchone_0(f"select sum({attrib}) from {tabname};")
         return get_sum
 
@@ -505,30 +480,22 @@ class ModifiedFilter(WhereClause):
         try:
            
             size1 = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
-            print(f"size bef: {size1}")
             self.connectionHelper.execute_sql(["SAVEPOINT f3;","BEGIN;",insert_col(tabname,'checking','INT'),flood_fill(tabname,'checking')])
             tp  = self.connectionHelper.execute_sql_fetchall(get_star(tabname))
-            print(f"tp :{tp[0]}")
             size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
-            print(f"size: {size}")
             flag=1
             #add checkpoint here
             self.connectionHelper.execute_sql(["SAVEPOINT f4;","BEGIN;"])
-            for i in range(1,size+1):
+            for i in range(size,0,-1):
                 val_at_i = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
-                self.connectionHelper.execute_sql([update_n_rows(tabname,attrib,i,max_val)])
+                self.connectionHelper.execute_sql([update_n_rows_desc(tabname,attrib,i,max_val)])
                 emp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname}")
-                print(f"emp : {emp[0]}")
                 res = self.app.doJob(query)
-                print(f"res in upp : {res}")
                 if isQ_result_empty(res):
-                    print(f"iter: {i}")
                     flag = 1
                     print(f"upper bound exists on {attrib}")
                     sum_bound = self.get_sum_bound(query,tabname,attrib,i,val_at_i,min_val,max_val,1)
-                    print(f"Sum bound is {sum_bound}")
                     avg_bound = self.get_avg_bound(query,tabname,attrib,i,val_at_i,min_val,max_val,1)
-                    print(f"Avg bound is {avg_bound}")
                     self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f4;"])
                     #function call to get upper bound
                     self.get_agg_upper(query,i,tabname,attrib,size,max_val,having_attribs,sum_bound,avg_bound)
@@ -545,7 +512,6 @@ class ModifiedFilter(WhereClause):
         try:
             self.connectionHelper.execute_sql(["SAVEPOINT f1;","BEGIN;",insert_col(tabname,'checking','INT'),flood_fill(tabname,'checking')])
             size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
-            print(f"size: {size}")
             flag=0
             self.connectionHelper.execute_sql(["SAVEPOINT f2;","BEGIN;"])
             for i in range(1,size+1):
@@ -553,19 +519,14 @@ class ModifiedFilter(WhereClause):
                 val_at_i = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
                 self.connectionHelper.execute_sql([update_n_rows(tabname,attrib,i,min_val)])
                 res = self.app.doJob(query)
-                print(f"res in low: {res}")
                 if isQ_result_empty(res):
-                    print(f"iter: {i}")
                     flag = 1
                     print(f"Lower bound exists on {attrib}")
                     #function call to get lower bound
                     sum_bound = self.get_sum_bound(query,tabname,attrib,i,val_at_i,min_val,max_val,0)
-                    print(f"Sum bound is {sum_bound}")
                     avg_bound = self.get_avg_bound(query,tabname,attrib,i,val_at_i,min_val,max_val,0)
-                    print(f"Avg bound is {avg_bound}")
                     self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
                     inst3 = self.app.doJob(query)
-                    print(f"After rollback we should have output, inst is {inst3}")
                     self.get_agg_lower(query,i,tabname,attrib,size,min_val,having_attribs,sum_bound,avg_bound)
                     break
             if flag ==0:
@@ -579,7 +540,6 @@ class ModifiedFilter(WhereClause):
 
     def having_int(self,query,attrib,tabname,having_attribs):
         size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
-        print(f"size: {size}")
         self.connectionHelper.execute_sql(["Begin;",create_table_as_select_star_from('new_table',tabname),
                                            truncate_table(tabname),sort_insert(tabname,attrib),
                                            drop_table('new_table')])

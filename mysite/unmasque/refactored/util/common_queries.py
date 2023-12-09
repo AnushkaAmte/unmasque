@@ -88,6 +88,9 @@ def sort_insert(tabname,attrib):
 def update_n_rows(tabname,attrib,counter,val):
     return f"WITH OrderedRows AS ( SELECT * FROM {tabname} ORDER BY checking LIMIT {counter} ) UPDATE {tabname} SET {attrib} = {val} FROM OrderedRows WHERE {tabname}.checking = OrderedRows.checking;"
 
+def update_n_rows_desc(tabname,attrib,counter,val):
+    return f"WITH OrderedRows AS ( SELECT * FROM {tabname} ORDER BY checking desc LIMIT {counter} ) UPDATE {tabname} SET {attrib} = {val} FROM OrderedRows WHERE {tabname}.checking = OrderedRows.checking;"
+
 def increment_row(tabname,attrib,i):
     return f"update {tabname} set {attrib} = {attrib} + 1 where checking = {i};"
 

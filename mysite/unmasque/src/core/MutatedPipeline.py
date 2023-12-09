@@ -115,7 +115,7 @@ def extract(query):
                 ej.global_join_graph,
                 gb.group_by_attrib)
     check = fl.doJob(query)
-    print(f"Check is {check}")
+    print(f"Extracted constrains: {check}")
     time_profile.update_for_where_clause(fl.local_elapsed_time)
     if not check:
         print("Cannot find Filter Predicates.")

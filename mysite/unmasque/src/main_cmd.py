@@ -31,9 +31,9 @@ if __name__ == '__main__':
     #    "Order by o_orderdate "\
     #    "Limit 10;"
     
-    hq = "select ps_partkey from partsupp group by ps_partkey having max(ps_availqty) > 7000;"
+    # hq = "select ps_partkey from partsupp group by ps_partkey having max(ps_availqty) > 20;"
 
-    # hq ="select s_name,sum(credits) from course_info,student_info where sr_no = student_sr_no group by s_name having sum(credits)>17 and avg(attendance) > 80;"
+    hq ="select s_name,sum(credits) from course_info,student_info where sr_no = student_sr_no group by s_name having max(attendance) = 80 and count(*) > 1;"
 
     # filter of having and where clause are disjoint
     # each attribute has atmost one aggregation
