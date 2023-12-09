@@ -37,12 +37,12 @@ class ModifiedFilter(WhereClause):
         self.do_init()
         temp1 = self.app.doJob(query)
         print(f"Temp1 is {temp1}")
-        self.preprocess(query)
+        if(len(self.global_join_graph) > 0):
+            self.preprocess(query)
+        for table in self.core_relations:
+            self.connectionHelper.execute_sql([create_table_as_select_star_from(get_tabname_temp(table),table)])
         temp2 = self.app.doJob(query)
-        table1 = self.connectionHelper.execute_sql_fetchall(f"Select * from student_info;")
-        table2 = self.connectionHelper.execute_sql_fetchall(f"Select * from course_info;")
         print(f"Temp2 is {temp2}")
-        print(f"Table1 is {table1} and Table2 is {table2}")
         self.filter_predicates,self.having_predicates = self.get_filter_predicates(query)
 
         return self.filter_predicates,self.having_predicates
@@ -143,12 +143,6 @@ class ModifiedFilter(WhereClause):
                 ans = self.connectionHelper.execute_sql_fetchall(f"select * from {original_table}")
                 print(f"attr : {key_atrrib} tab: {original_table}")
                 print(ans[0])
-
-        for table in self.core_relations:
-            self.connectionHelper.execute_sql([create_table_as_select_star_from(get_tabname_temp(table),table)])
-
-        
-
 
     def get_filter_predicates(self, query):
         filter_attribs = []
@@ -283,7 +277,7 @@ class ModifiedFilter(WhereClause):
                 temp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname} where checking = 1;")
                 col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tabname,attrib))
                 row1 = list(temp[0][0])
-                avg = self.connectionHelper.execute_sql_fetchone0(f"select avg({attrib}) from {tabname};")
+                avg = self.connectionHelper.execute_sql_fetchone_0(f"select avg({attrib}) from {tabname};")
                 row1[col_idx-1] = avg #make this avg
                 for j, item in enumerate(row1):
                     if isinstance(item, datetime.date):
@@ -291,16 +285,16 @@ class ModifiedFilter(WhereClause):
                     if isinstance(item, Decimal):
                         row1[j] = float(item)
                 res_bef = self.app.doJob(query)
-                self.connectionHelper.execute_sql(insert_row(tabname,tuple(row1)))
+                self.connectionHelper.execute_sql([insert_row(tabname,tuple(row1))])
                 col_list = self.connectionHelper.execute_sql_fetchall(f"select * from information_schema.columns WHERE table_name = '{tabname}';")
                 for attr in col_list:
                     if attr in self.group_by_attrib:
                         self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
                 res_aft = self.app.doJob(query)
                 if res_bef != res_aft:
-                    having_attribs.append([tabname,attrib,'avg','<=',max_val,avg_bound])
-                else:
                     having_attribs.append([tabname,attrib,'sum','<=',max_val,sum_bound])
+                else:
+                    having_attribs.append([tabname,attrib,'avg','<=',max_val,avg_bound])
         elif i == size:
             res1 = self.app.doJob(query)
             self.connectionHelper.execute_sql([increment_row(tabname,attrib,i),decrement_row(tabname,attrib,1)])
@@ -320,7 +314,7 @@ class ModifiedFilter(WhereClause):
                 temp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname} where checking = 1;")
                 col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tabname,attrib))
                 row1 = list(temp[0][0])
-                avg = self.connectionHelper.execute_sql_fetchone0(f"select avg({attrib}) from {tabname};")
+                avg = self.connectionHelper.execute_sql_fetchone_0(f"select avg({attrib}) from {tabname};")
                 row1[col_idx-1] = avg
                 for j, item in enumerate(row1):
                     if isinstance(item, datetime.date):
@@ -335,9 +329,9 @@ class ModifiedFilter(WhereClause):
                         self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1);"])
                 res_aft = self.app.doJob(query)
                 if res_bef != res_aft:
-                    having_attribs.append([tabname,attrib,'avg','<=',max_val,avg_bound])
-                else:
                     having_attribs.append([tabname,attrib,'sum','<=',max_val,sum_bound])
+                else:
+                    having_attribs.append([tabname,attrib,'avg','<=',max_val,avg_bound])
         else:
             #aggregate may be sum() or avg()
             a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
@@ -345,7 +339,7 @@ class ModifiedFilter(WhereClause):
             temp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname} where checking = 1;")
             col_idx = self.connectionHelper.execute_sql_fetchone_0(get_col_idx(tabname,attrib))
             row1 = list(temp[0][0])
-            avg = self.connectionHelper.execute_sql_fetchone0(f"select avg({attrib}) from {tabname};")
+            avg = self.connectionHelper.execute_sql_fetchone_0(f"select avg({attrib}) from {tabname};")
             row1[col_idx-1] = avg
             for j, item in enumerate(row1):
                 if isinstance(item, datetime.date):
@@ -360,9 +354,9 @@ class ModifiedFilter(WhereClause):
                     self.connectionHelper.execute_sql([f"UPDATE {tabname} SET {attr} = (SELECT {attr} FROM {tabname} where checking = 1 limit1);"])
             res_aft = self.app.doJob(query)
             if res_bef != res_aft:
-                having_attribs.append([tabname,attrib,'avg','<=',max_val,avg_bound])
-            else:
                 having_attribs.append([tabname,attrib,'sum','<=',max_val,sum_bound])
+            else:
+                having_attribs.append([tabname,attrib,'avg','<=',max_val,avg_bound])
 
     def get_agg_lower(self,query,i,tabname,attrib,size,min_val,having_attribs,sum_bound,avg_bound):
 
@@ -452,7 +446,7 @@ class ModifiedFilter(WhereClause):
                     if isinstance(item, Decimal):
                         row1[j] = float(item)
                 res_bef = self.app.doJob(query)
-                self.connectionHelper.execute_sql(insert_row(tabname,tuple(row1)))
+                self.connectionHelper.execute_sql([insert_row(tabname,tuple(row1))])
                 col_list = self.connectionHelper.execute_sql_fetchall(f"select * from information_schema.columns WHERE table_name = '{tabname}';")
                 for attr in col_list:
                     if attr in self.group_by_attrib:
@@ -478,7 +472,7 @@ class ModifiedFilter(WhereClause):
             res_bef = self.app.doJob(query)
             tp1  = self.connectionHelper.execute_sql_fetchall(get_star(tabname))
             print(f"tp1:{tp1}")
-            self.connectionHelper.execute_sql(insert_row(tabname,tuple(row1)))
+            self.connectionHelper.execute_sql([insert_row(tabname,tuple(row1))])
             n = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
             self.connectionHelper.execute_sql([f"update {tabname} set checking = {n} where {attrib}=0"])
             tp2  = self.connectionHelper.execute_sql_fetchall(get_star(tabname))

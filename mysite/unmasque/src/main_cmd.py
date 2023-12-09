@@ -13,14 +13,16 @@ if __name__ == '__main__':
     #      "< '1995-03-15' and l_shipdate > '1995-03-15' group by l_orderkey, o_orderdate, o_shippriority order by revenue " \
     #      "desc, o_orderdate, l_orderkey limit 10;"
 
-    hq = "Select o_orderdate "\
-         "From customer, orders, lineitem "\
-         "Where c_mktsegment = 'BUILDING' and c_custkey = o_custkey and l_orderkey = o_orderkey and "\
-         "o_orderdate < date '1995-03-15' and l_shipdate > date '1995-03-15' "\
-         "Group By o_orderdate having min(o_shippriority) =0 "\
-         "Order by  o_orderdate "\
-         "Limit 10;"
+    # hq = "Select o_orderdate "\
+    #      "From customer, orders, lineitem "\
+    #      "Where c_mktsegment = 'BUILDING' and c_custkey = o_custkey and l_orderkey = o_orderkey and "\
+    #      "o_orderdate < date '1995-03-15' and l_shipdate > date '1995-03-15' "\
+    #      "Group By o_orderdate having min(o_shippriority) =0 "\
+    #      "Order by  o_orderdate "\
+    #      "Limit 10;"
     
+    hq = "select name,avg(marks) from performance group by name having avg(marks) < 80 and count(*) > 1;"
+
     #hq ="Select  o_orderdate "\
     #    "From customer, orders "\
     #    "where c_custkey = o_custkey and "\
