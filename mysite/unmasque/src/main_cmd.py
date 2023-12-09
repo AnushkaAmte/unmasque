@@ -21,17 +21,19 @@ if __name__ == '__main__':
     #      "Order by  o_orderdate "\
     #      "Limit 10;"
     
-    hq = "select name,avg(marks) from performance group by name having avg(marks) < 80 and count(*) > 1;"
+    # hq = "select name,avg(marks) from performance group by name having sum(marks) < 241;"
 
-    #hq ="Select  o_orderdate "\
+    # hq ="Select  o_orderdate "\
     #    "From customer, orders "\
     #    "where c_custkey = o_custkey and "\
     #    "o_orderdate < date '1995-03-15'  "\
     #    "Group By o_orderdate having min(o_shippriority)=0 "\
     #    "Order by o_orderdate "\
     #    "Limit 10;"
+    
+    hq = "select ps_partkey from partsupp group by ps_partkey having max(ps_availqty) > 7000;"
 
-    #hq ="select s_name,sum(credits) from course_info,student_info where sr_no = student_sr_no group by s_name having max(credits)<3;"
+    # hq ="select s_name,sum(credits) from course_info,student_info where sr_no = student_sr_no group by s_name having sum(credits)>17 and avg(attendance) > 80;"
 
     # filter of having and where clause are disjoint
     # each attribute has atmost one aggregation
