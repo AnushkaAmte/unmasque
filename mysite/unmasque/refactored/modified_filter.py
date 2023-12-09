@@ -44,7 +44,7 @@ class ModifiedFilter(WhereClause):
         print(f"Temp2 is {temp2}")
         print(f"Table1 is {table1} and Table2 is {table2}")
         self.filter_predicates,self.having_predicates = self.get_filter_predicates(query)
-     
+
         return self.filter_predicates,self.having_predicates
 
     def get_index(self,value_list,attrib):
@@ -111,34 +111,28 @@ class ModifiedFilter(WhereClause):
         #print(f"size list:{size_list}")
         #print(f"indexes :{index}")
 
-        for i in range(len(join_result)):
-           
-            for res in join_result[i]:
-                size = size_list[i]
-                idx = index[i]
-                
-                temp_tab1 = res[:(size[0])]
-                temp_tab2= res[size[0]:] 
-                t_t1 = list(temp_tab1)
-                t_t2 = list(temp_tab2)
-                #print(f"{t_t1} size={len(t_t1)}")
-                #print(f"{t_t2} size={len(t_t2)}")
-                for j, item in enumerate(t_t1):
-                    if isinstance(item, datetime.date):
-                        t_t1[j] = str(item)
-                    if isinstance(item, Decimal):
-                        t_t1[j] = float(item)
-                for k, item in enumerate(t_t2):
-                    if isinstance(item, datetime.date):
-                        t_t2[k] = str(item)
-                    if isinstance(item, Decimal):
-                        t_t2[k] = float(item)
-                #print(f"{t_t1} size={len(t_t1)}")
-                #print(f"{t_t2} size={len(t_t2)}")
-               
-                #print(f"ref tab: {referenced_tables[i]}")
-                self.connectionHelper.execute_sql(
-                        ["BEGIN;",insert_row(referenced_tables[i][0],tuple(t_t1)),insert_row(referenced_tables[i][1],tuple(t_t2))])
+        count = 0
+        index1 = 0
+        for table_join in join_result:
+            print(f"table join{table_join}")
+            for rows in table_join:
+                slicing = size_list[count]
+                slice_val = 0
+                index2 = 0
+                for values in slicing:
+                    temp = rows[slice_val:slice_val + values]
+                    slice_val += values
+                    print(temp)
+                    for j, item in enumerate(temp):
+                        if isinstance(item, datetime.date):
+                            temp[j] = str(item)
+                        if isinstance(item, Decimal):
+                            temp[j] = float(item)
+                    #insert tup row in actual table
+                    self.connectionHelper.execute_sql(["BEGIN;",insert_row(referenced_tables[index1][index2],tuple(temp))])
+                    index2+=1
+            count+=1
+            index1+=1
         
         for attr_tup,ref_tup in zip(tuple_with_attrib,referenced_tables):
             for key_atrrib,original_table in zip(attr_tup,ref_tup):
