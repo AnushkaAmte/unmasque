@@ -33,7 +33,7 @@ if __name__ == '__main__':
     
     # hq = "select ps_partkey from partsupp group by ps_partkey having max(ps_availqty) > 20;"
 
-    hq ="select s_name,sum(credits) from course_info,student_info where sr_no = student_sr_no group by s_name having max(attendance) = 80 and count(*) > 1;"
+    hq ="select s_name from course_info,student_info where sr_no = student_sr_no and attendance >= 75 group by s_name;"
 
     # filter of having and where clause are disjoint
     # each attribute has atmost one aggregation

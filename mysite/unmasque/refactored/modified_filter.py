@@ -331,7 +331,7 @@ class ModifiedFilter(WhereClause):
             return False
         return True
     
-    def binary_search(self,lower_val,higher_val,tabname,attrib,query,flag,i):
+    def binary_search_1(self,lower_val,higher_val,tabname,attrib,query,flag,i):
         #flag = 0 --> greater_than_equal
         # self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = '{actual_val}';"])
         query_front = "update " + str(tabname) + " set " + str(attrib) + " = "
@@ -370,41 +370,76 @@ class ModifiedFilter(WhereClause):
                 self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
             return high
 
+    def binary_search(self,lower_val,higher_val,tabname,attrib,query,flag,i):
+        #flag = 0 --> greater_than_equal
+        # self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = '{actual_val}';"])
+        query_front = "update " + str(tabname) + " set " + str(attrib) + " = "
+        query_back = ";"
+        delta, while_cut_off = get_constants_for('int')
+        low = lower_val
+        high = higher_val
+        if flag == 1:
+            while is_left_less_than_right_by_cutoff('int', low, high, while_cut_off):
+                    mid_val, new_result = self.run_app_with_mid_val('int', high, low, query, query_front, query_back)
+                    if mid_val == low or mid_val == high:
+                        # self.revert_filter_changes(tabname)
+                        self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f4;"])
+                        break
+                    if isQ_result_empty(new_result):
+                        #new_val = get_val_plus_delta('int', mid_val, -1 * delta)
+                        high = mid_val
+                    else:
+                        low = mid_val
+                    # self.revert_filter_changes(tabname)
+                    self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f4;"])
+            return low
+        else:
+            while is_left_less_than_right_by_cutoff('int', low, high, while_cut_off):
+                mid_val, new_result = self.run_app_with_mid_val('int', high, low, query, query_front, query_back)
+                if mid_val == low or mid_val == high:
+                    # self.revert_filter_changes(tabname)
+                    self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
+                    break
+                if isQ_result_empty(new_result):
+                    #new_val = get_val_plus_delta('int', mid_val, delta)
+                    low = mid_val
+                else:
+                    high = mid_val
+                # self.revert_filter_changes(tabname)
+                self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
+            return high
+
     def get_agg_upper(self,query,i,tabname,attrib,size,max_val,having_attribs,sum_bound,avg_bound):
-        if i == 1:
+        if i == size:
             #filter predicate may be sum(), avg() or min()
 
             #check result before applying (+-)1, if we get same result as before(before i_min) then min(A) ruled out
             #and if we get different result then min(A) is the aggregate
 
             res1 = self.app.doJob(query)
-            self.connectionHelper.execute_sql([increment_row(tabname,attrib,1),decrement_row(tabname,attrib,2)])
-            res2 = self.app.doJob(query)
-            if res1 != res2:
-                #min(A) on attrib
-                #perform binary search between i_min and a1
-
-                #get a1
-                a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = 1;")
-                a1 -= 1
-                vl = self.binary_search(a1,max_val,tabname,attrib,query,1,i)
-                having_attribs.append([tabname,attrib,'min','<=',max_val,vl])
-            else:
-                self.avg_or_sum.append([tabname,attrib,'<=',max_val,sum_bound,avg_bound])
-
-        elif i == size:
-            res1 = self.app.doJob(query)
+            a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
+            vl = self.binary_search(a1,max_val,tabname,attrib,query,1,i)  
+            self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = {vl} where checking = {i};"])          
             self.connectionHelper.execute_sql([increment_row(tabname,attrib,i),decrement_row(tabname,attrib,1)])
             res2 = self.app.doJob(query)
             if res1 != res2:
-                #min(A) on attrib
-                #perform binary search between i_min and a1
-
-                #get a1
-                a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
-                a1 += 1
-                vl = self.binary_search(a1,max_val,tabname,attrib,query,1,i)
                 having_attribs.append([tabname,attrib,'max','<=',max_val,vl])
+            else:
+                self.avg_or_sum.append([tabname,attrib,'<=',max_val,sum_bound,avg_bound])
+
+        elif i == 1:
+            get1 = self.connectionHelper.execute_sql_fetchall(get_star(tabname))
+            print(f"get1: {get1[0]}")
+            a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
+            print(f"a1 is {a1}")
+            vl = self.binary_search(a1,max_val,tabname,attrib,query,1,i)
+            print(f"vl: {vl}")
+            self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = {vl} where checking = {i};"]) 
+            res1 = self.app.doJob(query)
+            self.connectionHelper.execute_sql([increment_row(tabname,attrib,1),decrement_row(tabname,attrib,2)])
+            res2 = self.app.doJob(query)
+            if res1 != res2:
+                having_attribs.append([tabname,attrib,'min','<=',max_val,vl])
             else:
                 #avg or sum()
                 self.avg_or_sum.append([tabname,attrib,'<=',max_val,sum_bound,avg_bound])
@@ -419,18 +454,19 @@ class ModifiedFilter(WhereClause):
 
             #check result before applying (+-)1, if we get same result as before(before i_min) then min(A) ruled out
             #and if we get different result then min(A) is the aggregate
-
+            
             res1 = self.app.doJob(query)
-            self.connectionHelper.execute_sql(["SAVEPOINT rs1;",increment_row(tabname,attrib,1),decrement_row(tabname,attrib,2)])
+            a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = 1;")
+            vl = self.binary_search(min_val,a1,tabname,attrib,query,0,i)
+            self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = {vl} where checking = 1;"])
+            print(f"al in get_lower: {a1}")
+            print(f"vl in get_lower: {vl}")
+            self.connectionHelper.execute_sql([increment_row(tabname,attrib,2),decrement_row(tabname,attrib,1)])
             res2 = self.app.doJob(query)
-            self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT rs1;"])
             if res1 != res2:
                 #min(A) on attrib
                 #perform binary search between i_min and a1
                 #get a1
-                a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = 1;")
-                a1 -= 1
-                vl = self.binary_search(min_val,a1,tabname,attrib,query,0,i)
                 having_attribs.append([tabname,attrib,'min','>=',vl,min_val])
             else:
                 #avg or sum()
@@ -438,30 +474,26 @@ class ModifiedFilter(WhereClause):
                 
         elif i == size:
             res1 = self.app.doJob(query)
+            a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
+            vl = self.binary_search(min_val,a1,tabname,attrib,query,0,i)
+            self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = {vl} where checking = {i}"])
             self.connectionHelper.execute_sql([increment_row(tabname,attrib,1),decrement_row(tabname,attrib,i)])
             res2 = self.app.doJob(query)
             if res1 != res2:
-                #min(A) on attrib
-                #perform binary search between i_min and a1
-
-                #get a1
-                a1 = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
-                a1 += 1
-                vl = self.binary_search(min_val,a1,tabname,attrib,query,0,i)
                 having_attribs.append([tabname,attrib,'max','>=',vl,min_val])
             else:
                 #avg or sum()
                 self.avg_or_sum.append([tabname,attrib,'>=',sum_bound,avg_bound,min_val])
         else:
             #aggregate may be sum() or avg()
-            self.avg_or_sum.append([tabname,attrib,sum_bound,avg_bound,min_val])
+            self.avg_or_sum.append([tabname,attrib,'>=',sum_bound,avg_bound,min_val])
 
     def get_avg_bound(self,query,tabname,attrib,i,actual_val,min_val,max_val,flag):
         # self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = '{actual_val}';"])
         if(flag == 0):
-            new_val = self.binary_search(min_val,actual_val,tabname,attrib,query,flag,i)
+            new_val = self.binary_search_1(min_val,actual_val,tabname,attrib,query,flag,i)
         else:
-            new_val = self.binary_search(actual_val,max_val,tabname,attrib,query,flag,i)
+            new_val = self.binary_search_1(actual_val,max_val,tabname,attrib,query,flag,i)
         self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = {new_val} where checking = {i};"])
         get_avg = self.connectionHelper.execute_sql_fetchone_0(f"select avg({attrib}) from {tabname};")
         return get_avg
@@ -469,9 +501,9 @@ class ModifiedFilter(WhereClause):
     def get_sum_bound(self,query,tabname,attrib,i,actual_val,min_val,max_val,flag):
         # self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = '{actual_val}';"])
         if(flag == 0):
-            new_val = self.binary_search(min_val,actual_val,tabname,attrib,query,flag,i)
+            new_val = self.binary_search_1(min_val,actual_val,tabname,attrib,query,flag,i)
         else:
-            new_val = self.binary_search(actual_val,max_val,tabname,attrib,query,flag,i)
+            new_val = self.binary_search_1(actual_val,max_val,tabname,attrib,query,flag,i)
         self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = {new_val} where checking = {i};"])
         get_sum = self.connectionHelper.execute_sql_fetchone_0(f"select sum({attrib}) from {tabname};")
         return get_sum
@@ -485,15 +517,20 @@ class ModifiedFilter(WhereClause):
             size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
             flag=1
             #add checkpoint here
-            self.connectionHelper.execute_sql(["SAVEPOINT f4;","BEGIN;"])
             for i in range(size,0,-1):
                 val_at_i = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
-                self.connectionHelper.execute_sql([update_n_rows_desc(tabname,attrib,i,max_val)])
+                self.connectionHelper.execute_sql([update_n_rows_desc(tabname,attrib,size-i+1,max_val)])
                 emp = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname}")
+                print(f"emp is {emp[0]}")
                 res = self.app.doJob(query)
                 if isQ_result_empty(res):
                     flag = 1
+                    print(f"Iter: {i}")
                     print(f"upper bound exists on {attrib}")
+                    self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = {val_at_i} where checking = {i};"])
+                    get = self.connectionHelper.execute_sql_fetchall(get_star(tabname))
+                    print(f"get: {get[0]}")
+                    self.connectionHelper.execute_sql(["SAVEPOINT f4;","BEGIN;"])
                     sum_bound = self.get_sum_bound(query,tabname,attrib,i,val_at_i,min_val,max_val,1)
                     avg_bound = self.get_avg_bound(query,tabname,attrib,i,val_at_i,min_val,max_val,1)
                     self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f4;"])
@@ -513,7 +550,8 @@ class ModifiedFilter(WhereClause):
             self.connectionHelper.execute_sql(["SAVEPOINT f1;","BEGIN;",insert_col(tabname,'checking','INT'),flood_fill(tabname,'checking')])
             size = self.connectionHelper.execute_sql_fetchone_0(get_row_count(tabname))
             flag=0
-            self.connectionHelper.execute_sql(["SAVEPOINT f2;","BEGIN;"])
+            isSorted = self.connectionHelper.execute_sql_fetchall(f"select * from {tabname};")
+            print(f"isSorted: {isSorted}")
             for i in range(1,size+1):
                 #add checkpoint here
                 val_at_i = self.connectionHelper.execute_sql_fetchone_0(f"select {attrib} from {tabname} where checking = {i};")
@@ -521,8 +559,11 @@ class ModifiedFilter(WhereClause):
                 res = self.app.doJob(query)
                 if isQ_result_empty(res):
                     flag = 1
+                    print(f"Iter: {i}")
                     print(f"Lower bound exists on {attrib}")
+                    self.connectionHelper.execute_sql([f"update {tabname} set {attrib} = {val_at_i} where checking = {i};"])
                     #function call to get lower bound
+                    self.connectionHelper.execute_sql(["SAVEPOINT f2;","BEGIN;"])
                     sum_bound = self.get_sum_bound(query,tabname,attrib,i,val_at_i,min_val,max_val,0)
                     avg_bound = self.get_avg_bound(query,tabname,attrib,i,val_at_i,min_val,max_val,0)
                     self.connectionHelper.execute_sql(["ROLLBACK TO SAVEPOINT f2;"])
