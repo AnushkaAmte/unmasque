@@ -77,12 +77,25 @@ class NewMinimizer(Minimizer):
             tabname = self.core_relations[i]
             attrib_list = self.get_attribs(tabname)
             #print(attrib_list)
+            try:
+                self.connectionHelper.execute_sql([
+                    alter_table_rename_to(tabname, tabname + "_backup"),
+                    create_table_as_select_star_from(tabname, tabname + "_backup")
+                ])
+            except Exception as error:
+                print("Error Occurred in  minimizer. Error: " + str(error))
+                self.connectionHelper.execute_sql(["ROLLBACK;"])
+                exit(1)
+
             for attrib in attrib_list:
                 #row_count = get_row_count(tabname)
                 #freq_dict = {};
                 freq_count = pd.read_sql_query(get_freq(tabname,attrib),self.connectionHelper.conn)  
                 df = pd.DataFrame(freq_count)
                 #print(df)
+
+
+
                 for i in range(len(df.index)):
                     # max_freq_count = df.iloc[i]['counter']
                     max_freq_val = df.iloc[i][attrib]
